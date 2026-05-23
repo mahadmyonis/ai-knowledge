@@ -86,6 +86,10 @@ async def chat_endpoint(
         # Extract matches from Pinecone response
         if results.matches:
             for match in results.matches:
+                # 🛑 THE FIX: Ignore low-confidence matches (like casual greetings)
+                if match.score < 0.30:
+                    continue
+                    
                 metadata = match.metadata
                 doc_text = metadata.get("text", "")
                 
