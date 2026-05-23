@@ -1,32 +1,31 @@
 import os
 import json
 from fastapi import FastAPI, UploadFile, File, Form
-from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
-import chromadb
+from pinecone import Pinecone
 from openai import OpenAI
 from dotenv import load_dotenv
-import fitz  # PyMuPDF for reading attachments in memory
+import fitz  # PyMuPDF
 
 # Load API Key from .env file
 load_dotenv()
 
 app = FastAPI()
 
-# Allow the Next.js frontend to talk to this backend
+# Allow frontend to communicate with backend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"], 
+    allow_origins=["*"], 
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Initialize AI and Database clients
 openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-chroma_client = chromadb.PersistentClient(path="./vectorstore")
-collection = chroma_client.get_or_create_collection(name="ocdsb_policies")
 
+# Initialize Pinecone instead of ChromaDB
+pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
+index = pc.Index("knowledge-base")
 
 @app.get("/api/documents")
 async def get_documents():
@@ -47,14 +46,12 @@ async def get_documents():
         
     return {"documents": documents}
 
-
 @app.post("/api/chat")
 async def chat_endpoint(
     question: str = Form(...),
-    history: str = Form("[]"), # 🔴 NEW: Catch the history from the frontend
-    file: UploadFile = File(None) # Now accepts an optional file!
+    history: str = Form("[]"), 
+    file: UploadFile = File(None) 
 ):
-    """Handles the user's question, searches DB, reads any attached files, and remembers history."""
     user_query = question
     print(f"Searching database for: {user_query}")
     
@@ -65,29 +62,31 @@ async def chat_endpoint(
         if file:
             print(f"Reading attached file: {file.filename}")
             content = await file.read()
-            # Open PDF directly from memory
             doc = fitz.open(stream=content, filetype="pdf")
             for page in doc:
                 attachment_text += page.get_text("text") + "\n"
         
-        # --- Handle RAG Database Search ---
+        # --- Handle Pinecone RAG Search ---
         query_embedding = openai_client.embeddings.create(
             input=user_query,
             model="text-embedding-3-small"
         ).data[0].embedding
         
-        results = collection.query(
-            query_embeddings=[query_embedding],
-            n_results=3
+        # Query Pinecone
+        results = index.query(
+            vector=query_embedding,
+            top_k=3,
+            include_metadata=True
         )
         
         context_text = ""
         sources = []
         
-        if results['documents'] and len(results['documents'][0]) > 0:
-            for i in range(len(results['documents'][0])):
-                doc_text = results['documents'][0][i]
-                metadata = results['metadatas'][0][i]
+        # Extract matches from Pinecone response
+        if results.matches:
+            for match in results.matches:
+                metadata = match.metadata
+                doc_text = metadata.get("text", "")
                 
                 context_text += f"\n--- Document: {metadata['doc']} | Section: {metadata['section']} ---\n{doc_text}\n"
                 
@@ -113,16 +112,12 @@ async def chat_endpoint(
         {attachment_text if attachment_text else "None"}
         """
         
-        # 🔴 NEW: Unpack the history and build the conversation thread
         past_messages = json.loads(history)
-        
         api_messages = [{"role": "system", "content": system_prompt}]
         
-        # Add all previous messages to the thread
         for msg in past_messages:
             api_messages.append({"role": msg["role"], "content": msg["content"]})
             
-        # Add the current question at the very end
         api_messages.append({"role": "user", "content": user_query})
         
         response = openai_client.chat.completions.create(
@@ -130,7 +125,6 @@ async def chat_endpoint(
             messages=api_messages
         )
         
-        # Add the attachment to the sources list so the UI knows it was used
         if file:
             sources.append({
                 "doc": file.filename,
