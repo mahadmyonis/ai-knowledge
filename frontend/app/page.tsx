@@ -16,7 +16,7 @@ export default function Home() {
 
   const fetchDocuments = async () => {
     try {
-      const response = await fetch("http://localhost:8000/api/documents")
+      const response = await fetch("https://ai-knowledge-backend-9vf6.onrender.com/api/documents")
       const data = await response.json()
       setFiles(data.documents)
     } catch (error) {
@@ -61,7 +61,7 @@ export default function Home() {
     setAttachment(null)
 
     try {
-      const response = await fetch("http://localhost:8000/api/chat", {
+      const response = await fetch("https://ai-knowledge-backend-9vf6.onrender.com/api/chat", {
         method: "POST",
         body: formData, // No Content-Type header needed for FormData!
       })
