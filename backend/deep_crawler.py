@@ -69,36 +69,28 @@ def scrape_clean_page(url):
         return None
 
 def process_and_upload(text, source_url, dept_index):
-    """Stage 3: Splits text using a relaxed Regex pattern to ensure proper chunking."""
+    # STRICT SPLIT: Only splits at official headers (e.g., "\nSYSC 4416 [0.5 credit]")
+    # This prevents chopping course descriptions in half.
+    raw_chunks = re.split(r'\n(?=[A-Z]{4}\s\d{4}\s*\[)', text)
     
-    # FIX: Relaxed regex. Looks for newline, 4 letters, space, 4 digits (e.g. "SYSC 4416")
-    raw_chunks = re.split(r'\n(?=[A-Z]{4}\s\d{4})', text)
-    
-    # Clean out empty chunks
     chunks = [chunk.strip() for chunk in raw_chunks if len(chunk.strip()) > 50]
     
     vectors_to_upsert = []
     for i, chunk in enumerate(chunks):
-        response = openai_client.embeddings.create(
-            input=chunk,
-            model="text-embedding-3-small"
-        )
-        embedding = response.data[0].embedding
-        
-        chunk_id = f"course-dept-{dept_index}-chunk-{i}"
-        vectors_to_upsert.append({
-            "id": chunk_id,
-            "values": embedding,
-            "metadata": {
-                "text": chunk,
-                "source": source_url,
-                "tenant": NAMESPACE
-            }
-        })
+        # We only upload if it looks like a real course (contains the bracket)
+        if "[" in chunk[:50]: 
+            response = openai_client.embeddings.create(input=chunk, model="text-embedding-3-small")
+            embedding = response.data[0].embedding
+            
+            vectors_to_upsert.append({
+                "id": f"dept-{dept_index}-chunk-{i}",
+                "values": embedding,
+                "metadata": {"text": chunk, "source": source_url, "tenant": NAMESPACE}
+            })
         
     if vectors_to_upsert:
         index.upsert(vectors=vectors_to_upsert, namespace=NAMESPACE)
-        print(f"      -> Uploaded {len(vectors_to_upsert)} structurally perfect course vectors.")
+        print(f"      -> Uploaded {len(vectors_to_upsert)} verified course chunks.")
 
 def run_pipeline():
     start_time = time.time()
