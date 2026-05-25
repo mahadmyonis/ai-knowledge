@@ -47,8 +47,8 @@ def chunk_text(text):
     print("[2/4] Slicing text into contextually aware chunks...")
     # 800 characters per chunk, with 100 char overlap to preserve sentence context
     text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=800,
-        chunk_overlap=100,
+        chunk_size=1500,
+        chunk_overlap=300,
         length_function=len,
     )
     chunks = text_splitter.split_text(text)

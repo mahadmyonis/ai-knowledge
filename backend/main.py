@@ -27,6 +27,11 @@ openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
 index = pc.Index("knowledge-base")
 
+@app.get("/")
+async def health_check():
+    """Keeps Render happy by returning a 200 OK status during automated health pings."""
+    return {"status": "CampusQ Brain is active and listening."}
+
 @app.get("/api/documents")
 async def get_documents():
     """Reads the docs folder and sends the list of PDFs to the frontend sidebar."""
@@ -75,45 +80,45 @@ async def chat_endpoint(
         # Query Pinecone
         results = index.query(
             vector=query_embedding,
-            top_k=3,
-            include_metadata=True,  # FIXED: Added the missing comma here!
+            top_k=10,  # EXPANDED: Hand the model more context to avoid missing split lists
+            include_metadata=True,
             namespace="carleton"
         )
         
         context_text = ""
         sources = []
+        seen_urls = set()  # TRACKER: Deduplicates messy link arrays in the UI
         
         # Extract matches from Pinecone response
         if results.matches:
             for match in results.matches:
-                # 🛑 THE FIX: Ignore low-confidence matches (like casual greetings)
+                # FILTER: Drop low-confidence/irrelevant vector returns
                 if match.score < 0.30:
                     continue
                     
                 metadata = match.metadata
                 doc_text = metadata.get("text", "")
-                
-                # FIXED: Mapped to the actual keys from our ingestion script
                 doc_source = metadata.get("source", "Unknown Source")
                 
                 context_text += f"\n--- Source: {doc_source} ---\n{doc_text}\n"
                 
-                sources.append({
-                    "doc": doc_source,
-                    "section": "Web Policy", # Fallback since we don't use sections anymore
-                    "snippet": doc_text[:150] + "..." 
-                })
+                # Deduplicate before feeding sources to frontend array
+                if doc_source not in seen_urls:
+                    seen_urls.add(doc_source)
+                    sources.append({
+                        "doc": doc_source,
+                        "section": "Web Policy",
+                        "snippet": doc_text[:150] + "..." 
+                    })
         
         # --- Build AI Prompt ---
         system_prompt = f"""You are CampusQ, an independent institutional knowledge assistant designed to help students navigate Carleton University policies. 
         DISCLAIMER: YOU ARE NOT OFFICIALLY AFFILIATED WITH CARLETON UNIVERSITY.
         
-        You have two sources of information: 
-        1. CONTEXT: Official documents extracted from the database.
-        2. ATTACHMENT: A temporary file the user just uploaded.
-        
-        Answer the user's question using ONLY these provided texts. 
-        If the answer is not in the text, explicitly say "I do not have enough information to answer this based on the provided documents." Do not guess.
+        CRITICAL RULES FOR READING CONTEXT:
+        1. NO MIXING PROGRAMS: The context contains information from MULTIPLE different engineering programs. You must strictly verify that a stream, course, or requirement actually belongs to the specific program the user is asking about. Do not list Aerospace or Biomedical streams under Software Engineering.
+        2. EXACT COURSE CODES: If a user asks about a specific course code (e.g., "SYSC 4416"), scan the text for that exact number. If it is not explicitly in the text, you must say "I do not see that specific course listed in this document."
+        3. NO GUESSING: If the answer is not explicitly in the text, say "I do not have enough information to answer this based on the provided documents." Do not try to extrapolate or guess.
         Keep answers clear, concise, and professional.
         
         DATABASE CONTEXT:
