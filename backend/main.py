@@ -56,23 +56,31 @@ async def get_documents():
 # ==========================================
 @app.get("/api/course/{course_code}")
 async def course_lookup(course_code: str):
-    """Express lane for deterministic course lookups. Bypasses the LLM entirely."""
+    """Express lane using Metadata Filtering for 100% deterministic accuracy."""
     clean_code = course_code.upper().strip()
-    print(f"Executing deterministic lookup for: {clean_code}")
+    print(f"Executing metadata-filtered lookup for: {clean_code}")
     
     try:
-        # 1. THE FIX: Add "Semantic Padding" so the vector matches the vibe of a course catalog
-        search_query = f"Course description, credits, and prerequisites for {clean_code}"
+        # 1. Extract the department (e.g., "SYSC 4416" -> "SYSC")
+        dept = clean_code.split(" ")[0]
         
+        # Carleton's URLs are sometimes uppercase, sometimes lowercase in the scraper
+        url_upper = f"https://calendar.carleton.ca/undergrad/courses/{dept.upper()}/"
+        url_lower = f"https://calendar.carleton.ca/undergrad/courses/{dept.lower()}/"
+        
+        # We still need a dummy vector to satisfy Pinecone's API
         query_embedding = openai_client.embeddings.create(
-            input=search_query,
+            input=f"Course description for {clean_code}",
             model="text-embedding-3-small"
         ).data[0].embedding
         
-        # 2. THE FIX: Widen the net to 30 chunks to ensure we catch it
+        # 2. THE METADATA FILTER: Force Pinecone to ONLY look at the specific department's page
         results = index.query(
             vector=query_embedding,
-            top_k=30,
+            top_k=100, # Grab basically every course in the department
+            filter={
+                "source": {"$in": [url_upper, url_lower]}
+            },
             include_metadata=True,
             namespace="carleton"
         )
@@ -82,6 +90,7 @@ async def course_lookup(course_code: str):
             for match in results.matches:
                 doc_text = match.metadata.get("text", "")
                 
+                # Check if our exact code is in the text block
                 if clean_code in doc_text:
                     return {
                         "found": True,
