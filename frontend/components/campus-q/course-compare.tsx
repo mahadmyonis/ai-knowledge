@@ -12,6 +12,7 @@ interface CourseData {
   credits: number
   description: string
   prerequisites: string[]
+  prerequisiteText?: string
 }
 
 interface CourseCompareProps {
@@ -47,6 +48,7 @@ export function CourseCompare({ initialCourses = [] }: CourseCompareProps) {
             credits: data.credits || 0.5,
             description: data.description || "No description available.",
             prerequisites: data.prerequisites || [],
+            prerequisiteText: data.prerequisiteText || "",
           },
         ])
         setSearch("")
@@ -70,9 +72,7 @@ export function CourseCompare({ initialCourses = [] }: CourseCompareProps) {
       label: "Prerequisites",
       key: "prerequisites",
       render: (c) =>
-        c.prerequisites.length === 0 ? (
-          <span className="text-green-600 dark:text-green-400 font-medium">None</span>
-        ) : (
+        c.prerequisites.length > 0 ? (
           <div className="flex flex-wrap gap-1">
             {c.prerequisites.map((p) => (
               <span key={p} className="px-1.5 py-0.5 bg-primary/10 text-primary text-xs rounded font-mono">
@@ -80,6 +80,10 @@ export function CourseCompare({ initialCourses = [] }: CourseCompareProps) {
               </span>
             ))}
           </div>
+        ) : c.prerequisiteText && c.prerequisiteText !== "None" ? (
+          <span className="text-xs text-muted-foreground leading-relaxed">{c.prerequisiteText}</span>
+        ) : (
+          <span className="text-green-600 dark:text-green-400 font-medium text-xs">None</span>
         ),
     },
     {

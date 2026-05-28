@@ -10,6 +10,7 @@ interface CourseCardProps {
   credits: number
   description: string
   prerequisites: string[]
+  prerequisiteText?: string
 }
 
 export function CourseCard({
@@ -18,12 +19,15 @@ export function CourseCard({
   credits,
   description,
   prerequisites,
+  prerequisiteText,
 }: CourseCardProps) {
   const { theme } = useCampus()
 
+  const hasChips = prerequisites.length > 0
+  const hasRawText = prerequisiteText && prerequisiteText !== "None"
+
   return (
     <div className="w-full rounded-xl border border-border bg-card overflow-hidden shadow-sm">
-      {/* Thin accent line */}
       <div className={cn("h-[3px] w-full", theme.bgClass)} />
 
       <div className="p-5 space-y-4">
@@ -59,7 +63,7 @@ export function CourseCard({
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2.5">
             Prerequisites
           </p>
-          {prerequisites.length > 0 ? (
+          {hasChips ? (
             <div className="flex flex-wrap gap-1.5">
               {prerequisites.map((prereq) => (
                 <span
@@ -71,6 +75,8 @@ export function CourseCard({
                 </span>
               ))}
             </div>
+          ) : hasRawText ? (
+            <p className="text-xs text-muted-foreground leading-relaxed">{prerequisiteText}</p>
           ) : (
             <p className="text-xs text-muted-foreground/60">None required.</p>
           )}

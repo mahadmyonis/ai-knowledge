@@ -103,22 +103,29 @@ def parse_course_from_metadata(metadata: dict, clean_code: str) -> dict:
     raw_credits = metadata.get("credits", "0.5")
     cred_match = re.search(r"[\d\.]+", str(raw_credits))
     credits_val = float(cred_match.group()) if cred_match else 0.5
-    prereq_str = metadata.get("prerequisites", "None")
-    # Pull clean course codes from the prerequisite metadata field.
-    # Non-breaking spaces (\xa0) appear in Carleton calendar data between dept and number.
-    if prereq_str and prereq_str != "None":
-        raw_codes = re.findall(r'[A-Z]{3,4}[\xa0\s]+\d{4}', prereq_str)
-        prereqs_array = list(dict.fromkeys(  # deduplicate, preserve order
-            p.replace('\xa0', ' ').strip() for p in raw_codes
-        ))
+    # --- Prerequisite extraction ---
+    # Strategy: always try to pull the raw "Prerequisite(s): ..." sentence from the
+    # doc_text first (most reliable), then fall back to the metadata field.
+    prereq_text = ""
+    prereq_match = re.search(
+        r'Prerequisite\(s\)\s*[: ]\s*(.+?)(?=\s*(?:Precludes|Lectures\s+\w+|Also listed|Not available|$))',
+        doc_text, re.IGNORECASE | re.DOTALL
+    )
+    if prereq_match:
+        prereq_text = prereq_match.group(1).strip().rstrip(".")
     else:
-        # Fall back: scan the raw doc_text for a "Prerequisite(s):" line and extract codes from it
-        prereq_match = re.search(r'Prerequisite\(s\)\s*:\s*(.+?)(?:\.|$)', doc_text, re.IGNORECASE | re.DOTALL)
-        if prereq_match:
-            raw_codes = re.findall(r'[A-Z]{3,4}[\xa0\s]+\d{4}', prereq_match.group(1))
-            prereqs_array = list(dict.fromkeys(p.replace('\xa0', ' ').strip() for p in raw_codes))
-        else:
-            prereqs_array = []
+        # fall back to metadata field
+        meta_prereq = metadata.get("prerequisites", "")
+        if meta_prereq and meta_prereq.lower() not in ("none", ""):
+            prereq_text = meta_prereq.strip()
+
+    # Also build a clean code array (for the prereq visualizer) from whatever we found
+    if prereq_text:
+        raw_codes = re.findall(r'[A-Z]{3,4}[\xa0 ]+\d{4}', prereq_text)
+        prereqs_array = list(dict.fromkeys(p.replace('\xa0', ' ').strip() for p in raw_codes))
+    else:
+        prereqs_array = []
+
     clean_desc = extract_clean_description(doc_text)
     return {
         "courseCode": metadata.get("course_code", clean_code),
@@ -126,6 +133,7 @@ def parse_course_from_metadata(metadata: dict, clean_code: str) -> dict:
         "credits": credits_val,
         "description": clean_desc,
         "prerequisites": prereqs_array,
+        "prerequisiteText": prereq_text or "None",
     }
 
 
