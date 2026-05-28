@@ -74,7 +74,13 @@ def parse_course_from_metadata(metadata: dict, clean_code: str) -> dict:
     cred_match = re.search(r"[\d\.]+", str(raw_credits))
     credits_val = float(cred_match.group()) if cred_match else 0.5
     prereq_str = metadata.get("prerequisites", "None")
-    prereqs_array = [] if prereq_str == "None" else [p.strip() for p in prereq_str.split(",")]
+    # Extract clean course codes (e.g. SYSC 2100) from the raw prerequisite string
+    # instead of splitting by comma which produces messy fragments like "( ECOR 2050 or..."
+    if prereq_str == "None" or not prereq_str:
+        prereqs_array = []
+    else:
+        prereqs_array = re.findall(r'[A-Z]{3,4}\xa0?\s*\d{4}', prereq_str)
+        prereqs_array = [p.replace('\xa0', ' ').strip() for p in prereqs_array]
     clean_desc = extract_clean_description(doc_text)
     return {
         "courseCode": metadata.get("course_code", clean_code),
