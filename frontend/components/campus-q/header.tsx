@@ -15,12 +15,18 @@ export function Header({ isDark, onToggleDark }: HeaderProps) {
   const { isSignedIn, isLoaded } = useUser()
 
   return (
-    <header className="h-14 shrink-0 flex items-center justify-between px-4 md:px-6 border-b border-border/40 bg-card">
+    <header className="h-12 shrink-0 flex items-center justify-between px-4 border-b border-border/40 bg-card">
+      {/* Wordmark — hidden on mobile (bottom nav handles nav) */}
+      <span className="hidden md:block text-sm font-semibold tracking-tight text-foreground select-none">
+        Campus<span className={theme.textClass}>Q</span>
+      </span>
 
-      {/* Left — empty, wordmark is in sidebar */}
-      <div />
+      {/* Mobile: just the wordmark centered */}
+      <span className="md:hidden text-sm font-semibold tracking-tight text-foreground select-none">
+        Campus<span className={theme.textClass}>Q</span>
+      </span>
 
-      {/* Right — actions */}
+      {/* Actions */}
       <div className="flex items-center gap-1">
         <button
           onClick={onToggleDark}

@@ -21,20 +21,20 @@ export function EmptyState({ onSuggestionClick, onViewChange }: EmptyStateProps)
   const campusName = campusThemes[selectedCampus].name
 
   return (
-    <div className="flex flex-col items-center w-full px-4 pt-16 pb-6 gap-10">
+    <div className="flex flex-col items-center w-full px-4 pt-10 md:pt-16 pb-6 gap-8 md:gap-10">
 
       {/* Wordmark */}
       <div className="text-center select-none">
-        <h1 className="text-[2.75rem] md:text-5xl font-bold tracking-tight text-foreground leading-none">
+        <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-foreground leading-none">
           Campus<span className={theme.textClass}>Q</span>
         </h1>
-        <p className="mt-2.5 text-sm text-muted-foreground">
+        <p className="mt-2 text-sm text-muted-foreground">
           AI academic assistant for <span className="text-foreground font-medium">{campusName}</span>
         </p>
       </div>
 
       {/* Tool cards */}
-      <div className="grid grid-cols-2 gap-3 w-full max-w-lg">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-full max-w-lg">
         {[
           {
             icon: BookOpen,

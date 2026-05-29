@@ -107,7 +107,7 @@ export function ChatInput({ value, onChange, onSubmit, disabled, isHome }: ChatI
             placeholder={placeholder}
             rows={1}
             disabled={disabled}
-            className="flex-1 resize-none bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground/40 min-h-[52px] max-h-[180px] py-[14px] pl-4 pr-14 leading-relaxed"
+            className="flex-1 resize-none bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground/40 min-h-[52px] max-h-[160px] py-[14px] pl-4 pr-14 leading-relaxed"
           />
 
           <button

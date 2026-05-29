@@ -68,20 +68,20 @@ export default function LandingPage() {
           Now in beta · Carleton University
         </div>
 
-        <h1 className="text-5xl md:text-7xl font-bold tracking-tight leading-[1.06] max-w-3xl text-zinc-900">
+        <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold tracking-tight leading-[1.06] max-w-3xl text-zinc-900">
           Your AI assistant
           <br />
           <span className="text-red-600">for Carleton.</span>
         </h1>
 
-        <p className="mt-6 text-lg md:text-xl text-zinc-500 max-w-xl leading-relaxed">
+        <p className="mt-5 text-base md:text-xl text-zinc-500 max-w-xl leading-relaxed px-2">
           Instant answers about courses, prerequisites, programs, and regulations — sourced directly from the official academic calendar.
         </p>
 
-        <div className="flex flex-col sm:flex-row items-center gap-3 mt-10">
+        <div className="flex flex-col sm:flex-row items-center gap-3 mt-8 w-full sm:w-auto">
           <Link
             href="/chat"
-            className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold px-7 py-3.5 rounded-xl transition-colors shadow-sm"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold px-7 py-3.5 rounded-xl transition-colors shadow-sm"
           >
             Try it free — sign up in seconds
             <ArrowRight className="size-4" />
@@ -132,7 +132,7 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {FEATURES.map((f) => {
               const Icon = f.icon
               return (

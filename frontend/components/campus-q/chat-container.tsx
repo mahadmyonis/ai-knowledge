@@ -3,6 +3,7 @@
 import * as React from "react"
 import { track } from "@vercel/analytics"
 import { cn } from "@/lib/utils"
+import { MessageSquare as MessageSquareIcon, BookOpen as BookOpenIcon, BarChart2 as BarChart2Icon } from "lucide-react"
 import { Header } from "./header"
 import { Sidebar, type View, type ChatSession } from "./sidebar"
 import { ChatMessage } from "./chat-message"
@@ -400,22 +401,22 @@ export function ChatContainer() {
         )}
 
         {/* Mobile bottom nav */}
-        <nav className="md:hidden flex border-t border-border/50 bg-card/80 backdrop-blur-sm">
+        <nav className="md:hidden flex border-t border-border/40 bg-card safe-area-pb">
           {[
-            { view: "chat" as View, label: "Chat", icon: "💬" },
-            { view: "programs" as View, label: "Programs", icon: "🎓" },
-            { view: "compare" as View, label: "Compare", icon: "⚖️" },
-          ].map(({ view, label, icon }) => (
+            { view: "chat" as View, label: "Chat", Icon: MessageSquareIcon },
+            { view: "programs" as View, label: "Programs", Icon: BookOpenIcon },
+            { view: "compare" as View, label: "Compare", Icon: BarChart2Icon },
+          ].map(({ view, label, Icon }) => (
             <button
               key={view}
               onClick={() => setCurrentView(view)}
               className={cn(
-                "flex-1 flex flex-col items-center py-2 text-xs gap-0.5 transition-colors",
-                currentView === view ? "text-primary" : "text-muted-foreground"
+                "flex-1 flex flex-col items-center pt-3 pb-4 gap-1 transition-colors",
+                currentView === view ? "text-primary" : "text-muted-foreground/60"
               )}
             >
-              <span className="text-base leading-none">{icon}</span>
-              <span>{label}</span>
+              <Icon className={cn("size-5", currentView === view && "text-primary")} />
+              <span className="text-[10px] font-medium">{label}</span>
             </button>
           ))}
         </nav>
