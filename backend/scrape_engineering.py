@@ -1,25 +1,24 @@
 """
-scrape_engineering.py — Specialized scraper for Carleton's engineering programs page.
+scrape_engineering.py — HTML-aware scraper for Carleton's engineering programs page.
 
-The generic scraper got 21 sections for a page covering 20+ programs × 4 years.
-This scraper understands the specific structure:
+Structure discovered from debug_engineering.py:
+  - Each program is bounded by an <h3> or <h4> heading
+  - Aerospace streams use <h4> tags
+  - All other programs use <h3> tags
+  - Requirements are numbered items (1. First Year, 2. 0.5 credit in...) NOT year headings
+  - We store ONE chunk per program/stream with ALL requirements in it
 
-  [Stream heading] Aerospace Engineering - Stream A: Aerodynamics...
-    [Year heading] First Year / Second Year / Third Year / Fourth Year
-      [Course list] AERO 2001 [0.5]...
-
-Each (stream, year) pair becomes one Pinecone vector.
-Result: ~80+ focused chunks instead of 21 coarse ones.
+This replaces the broken plain-text approach that got confused by course names.
 
 Run: py scrape_engineering.py
-     (no need to wipe — uses unique IDs so safe to re-run)
+Safe to re-run — uses unique IDs, overwrites previous engineering chunks.
 """
 
 import os
 import re
 import time
 import requests
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, NavigableString
 from dotenv import load_dotenv
 from pinecone import Pinecone
 from openai import OpenAI
@@ -34,213 +33,148 @@ NAMESPACE = "programs"
 EMBED_MODEL = "text-embedding-3-small"
 ENG_URL = "https://calendar.carleton.ca/undergrad/undergradprograms/engineering/"
 
-# ── Patterns ──────────────────────────────────────────────────────────────────
+# Headings that are NOT program names — skip these
+SKIP_HEADINGS = [
+    "courses", "regulations", "co-operative", "admissions", "participation",
+    "graduation", "course load", "academic continuation", "time limit",
+    "appeals", "work term", "undergraduate", "degree", "admission requirements",
+    "program requirements", "course categories",
+]
 
-# Stream-level headings — these mark the start of a new program/stream
-STREAM_PATTERN = re.compile(
-    r'^('
-    r'Aerospace Engineering[^$]*|'
-    r'Architectural Conservation[^$]*|'
-    r'Biomedical and (Electrical|Mechanical) Engineering[^$]*|'
-    r'Civil Engineering[^$]*|'
-    r'Communications Engineering[^$]*|'
-    r'Computer Systems Engineering[^$]*|'
-    r'Electrical Engineering[^$]*|'
-    r'Engineering Physics[^$]*|'
-    r'Environmental Engineering[^$]*|'
-    r'Mechanical Engineering[^$]*|'
-    r'Mechatronics Engineering[^$]*|'
-    r'Network Technology[^$]*|'
-    r'Software Engineering[^$]*|'
-    r'Sustainable and Renewable Energy[^$]*'
-    r')$',
-    re.IGNORECASE,
-)
+def is_program_heading(text: str) -> bool:
+    """Returns True if this heading represents a degree program."""
+    t = text.lower()
+    if any(skip in t for skip in SKIP_HEADINGS):
+        return False
+    # Must mention engineering or a known program
+    keywords = [
+        "engineering", "software", "sustainable", "renewable",
+        "biomedical", "mechatronics", "physics", "architectural"
+    ]
+    return any(k in t for k in keywords) and len(text) > 10
 
-# Year-level headings within a stream
-YEAR_PATTERN = re.compile(
-    r'^(First Year|Second Year|Third Year|Fourth Year|'
-    r'Year\s+1\b|Year\s+2\b|Year\s+3\b|Year\s+4\b|'
-    r'Year One|Year Two|Year Three|Year Four)(.*)$',
-    re.IGNORECASE,
-)
+def clean(text: str) -> str:
+    """Remove zero-width spaces, normalize whitespace."""
+    text = text.replace("​", "").replace("\xa0", " ")
+    text = re.sub(r"\s+", " ", text)
+    return text.strip()
 
-YEAR_LABELS = {
-    "first": 1, "year 1": 1, "year one": 1,
-    "second": 2, "year 2": 2, "year two": 2,
-    "third": 3, "year 3": 3, "year three": 3,
-    "fourth": 4, "year 4": 4, "year four": 4,
-}
+def extract_program_name(tag) -> str:
+    """Get clean program name from heading tag."""
+    return clean(tag.get_text(" ", strip=True))
 
-def normalize_year(heading: str) -> int:
-    h = heading.lower()
-    for key, val in YEAR_LABELS.items():
-        if key in h:
-            return val
-    return 0
+def extract_content_until_next_heading(start_tag) -> str:
+    """
+    Walk forward through DOM siblings collecting all text
+    until we hit the next h2, h3, or h4 heading.
+    """
+    parts = []
+    current = start_tag.next_sibling
 
-# ── Scrape ────────────────────────────────────────────────────────────────────
+    while current:
+        if hasattr(current, "name"):
+            if current.name in ["h2", "h3", "h4"]:
+                break
+            text = clean(current.get_text(" ", strip=True))
+            if text:
+                parts.append(text)
+        elif isinstance(current, NavigableString):
+            text = clean(str(current))
+            if text:
+                parts.append(text)
+        current = current.next_sibling
 
-def scrape_engineering_page() -> str:
-    print(f"Fetching {ENG_URL}")
+    return "\n".join(parts)
+
+def scrape() -> list[dict]:
+    print(f"Fetching {ENG_URL}...")
     r = requests.get(ENG_URL, timeout=20)
     r.raise_for_status()
     soup = BeautifulSoup(r.text, "html.parser")
-    for tag in soup(["script", "style", "nav", "header", "footer", "form"]):
-        tag.decompose()
+
     main = soup.find("div", class_="pageblock") or soup.find("main") or soup.find("body")
-    raw = main.get_text(separator="\n")
-    raw = raw.replace("\xa0", " ")
-    raw = re.sub(r"[ \t]+", " ", raw)
-    raw = re.sub(r"\n{3,}", "\n\n", raw)
-    return raw.strip()
 
-# ── Parse into (stream, year, content) triples ────────────────────────────────
+    programs = []
 
-def parse_stream_years(text: str) -> list[dict]:
-    """
-    Walk through the text line by line.
-    State machine:
-      - When we hit a stream heading → new stream
-      - When we hit a year heading → new year within current stream
-      - Everything else → content for current (stream, year)
-    """
-    results = []
-    current_stream = None
-    current_year = None
-    current_year_num = 0
-    current_lines = []
-
-    def flush():
-        if current_stream and current_year and current_lines:
-            content = "\n".join(current_lines).strip()
-            if len(content) > 40:
-                results.append({
-                    "stream": current_stream,
-                    "year": current_year,
-                    "year_num": current_year_num,
-                    "content": content,
-                })
-
-    lines = text.split("\n")
-
-    for line in lines:
-        stripped = line.strip()
-        if not stripped:
-            if current_lines:
-                current_lines.append("")
+    # Walk all h3 and h4 tags in document order
+    for tag in main.find_all(["h3", "h4"]):
+        name = extract_program_name(tag)
+        if not is_program_heading(name):
             continue
 
-        # Check if this is a stream heading
-        if STREAM_PATTERN.match(stripped) and len(stripped) < 120:
-            flush()
-            current_stream = stripped
-            current_year = "Overview"
-            current_year_num = 0
-            current_lines = []
+        content = extract_content_until_next_heading(tag)
+        if len(content) < 100:
+            # Too short — likely a stub or sub-heading with no real content
             continue
 
-        # Check if this is a year heading
-        if current_stream:
-            ym = YEAR_PATTERN.match(stripped)
-            if ym and len(stripped) < 60:
-                flush()
-                current_year = stripped
-                current_year_num = normalize_year(stripped)
-                current_lines = []
-                continue
+        programs.append({
+            "name": name,
+            "content": content,
+            "tag": tag.name,
+        })
+        print(f"  <{tag.name}> {name[:70]}  ({len(content)} chars)")
 
-        # Regular content line
-        if current_stream:
-            current_lines.append(stripped)
+    return programs
 
-    flush()
-    return results
-
-# ── Also scrape individual stream pages if they exist ─────────────────────────
-
-STREAM_SLUGS = {
-    "Aerospace Engineering Stream A": "aerospaceengineeringa",
-    "Aerospace Engineering Stream B": "aerospaceengineeringb",
-    "Aerospace Engineering Stream C": "aerospaceengineeringc",
-    "Aerospace Engineering Stream D": "aerospaceengineeringd",
-    "Software Engineering": "softwareengineering",
-    "Software Engineering Stream A": "softwareengineeringai",
-    "Sustainable and Renewable Energy Stream A": "sreea",
-    "Sustainable and Renewable Energy Stream B": "sreeb",
-}
-
-# ── Upload ─────────────────────────────────────────────────────────────────────
-
-def upload_chunks(chunks: list[dict]):
-    if not chunks:
+def upload(programs: list[dict]):
+    if not programs:
+        print("Nothing to upload.")
         return
 
-    print(f"\nUploading {len(chunks)} stream-year chunks...")
+    print(f"\nEmbedding and uploading {len(programs)} program chunks...")
 
-    embed_texts = []
-    for c in chunks:
-        embed_texts.append(
-            f"{c['stream']} — {c['year']}\n{c['content'][:800]}"
-        )
+    # Build embedding texts
+    embed_texts = [
+        f"{p['name']}\nRequired courses and program structure:\n{p['content'][:900]}"
+        for p in programs
+    ]
 
     batch_size = 50
     total = 0
 
-    for i in range(0, len(chunks), batch_size):
-        batch = chunks[i:i + batch_size]
+    for i in range(0, len(programs), batch_size):
+        batch = programs[i:i + batch_size]
         batch_texts = embed_texts[i:i + batch_size]
 
         response = openai_client.embeddings.create(input=batch_texts, model=EMBED_MODEL)
 
         vectors = []
         for j, emb_data in enumerate(response.data):
-            c = batch[j]
-            stream_slug = re.sub(r"[^a-z0-9]", "-", c["stream"].lower())[:50]
-            year_slug = re.sub(r"[^a-z0-9]", "-", c["year"].lower())[:20]
-            chunk_id = f"eng-{stream_slug}-{year_slug}-{i+j}"
+            p = batch[j]
+            slug = re.sub(r"[^a-z0-9]", "-", p["name"].lower())[:60].strip("-")
+            chunk_id = f"eng-{slug}"
 
             vectors.append({
                 "id": chunk_id,
                 "values": emb_data.embedding,
                 "metadata": {
-                    "program": c["stream"],
-                    "section": c["year"],
-                    "year_num": c["year_num"],
+                    "program": p["name"],
                     "faculty": "Engineering & Design",
-                    "text": f"{c['stream']}\n{c['year']}\n{c['content'][:1500]}",
+                    "section": "Full Requirements",
+                    # Store full content — this is what the LLM sees
+                    "text": f"{p['name']}\n\n{p['content'][:2000]}",
                     "source": ENG_URL,
                 },
             })
 
         index.upsert(vectors=vectors, namespace=NAMESPACE)
         total += len(vectors)
-        print(f"  Uploaded batch {i // batch_size + 1} ({total} total)")
+        print(f"  Batch {i // batch_size + 1}: {total} uploaded")
 
-    print(f"✓ Done — {total} engineering chunks indexed")
-
-# ── Main ──────────────────────────────────────────────────────────────────────
+    print(f"\n✓ Done — {total} engineering program chunks in Pinecone")
 
 def run():
-    print("=" * 50)
-    print("Engineering Program Scraper")
-    print("=" * 50)
+    print("=" * 55)
+    print("Engineering Program Scraper (HTML-aware)")
+    print("=" * 55 + "\n")
 
-    text = scrape_engineering_page()
-    print(f"Extracted {len(text)} characters\n")
+    programs = scrape()
+    print(f"\nFound {len(programs)} program sections\n")
 
-    chunks = parse_stream_years(text)
-    print(f"Parsed {len(chunks)} stream-year sections:\n")
-
-    # Print summary
-    by_stream = {}
-    for c in chunks:
-        by_stream.setdefault(c["stream"], []).append(c["year"])
-    for stream, years in sorted(by_stream.items()):
-        print(f"  {stream}: {len(years)} sections ({', '.join(years)})")
-
-    print()
-    upload_chunks(chunks)
+    if programs:
+        upload(programs)
+    else:
+        print("No programs found — check the HTML structure.")
 
 if __name__ == "__main__":
     run()
