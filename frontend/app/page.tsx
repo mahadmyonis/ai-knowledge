@@ -69,7 +69,7 @@ export default function LandingPage() {
         </div>
 
         <h1 className="text-5xl md:text-7xl font-bold tracking-tight leading-[1.06] max-w-3xl text-zinc-900">
-          Your AI advisor
+          Your AI assistant
           <br />
           <span className="text-red-600">for Carleton.</span>
         </h1>

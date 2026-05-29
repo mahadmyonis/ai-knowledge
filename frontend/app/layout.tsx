@@ -8,16 +8,16 @@ const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'CampusQ — Your AI academic advisor, available 24/7',
+  title: 'CampusQ — AI academic assistant for Carleton students',
   description: 'CampusQ is an AI-powered academic assistant for Carleton University students. Look up courses, prerequisites, program requirements, and university policies instantly.',
-  keywords: ['Carleton University', 'course lookup', 'prerequisites', 'academic advisor', 'degree planner'],
+  keywords: ['Carleton University', 'course lookup', 'prerequisites', 'academic assistant', 'degree planner'],
   icons: {
     icon: '/favicon.svg',
     shortcut: '/favicon.svg',
   },
   openGraph: {
-    title: 'CampusQ — AI Academic Advisor',
-    description: 'Your AI academic advisor, available 24/7. Instant answers from the Carleton academic calendar.',
+    title: 'CampusQ — AI Academic Assistant',
+    description: 'Your AI academic assistant, available 24/7. Instant answers from the Carleton academic calendar.',
     type: 'website',
   },
 }

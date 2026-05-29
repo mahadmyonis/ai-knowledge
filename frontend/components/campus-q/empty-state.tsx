@@ -29,7 +29,7 @@ export function EmptyState({ onSuggestionClick, onViewChange }: EmptyStateProps)
           Campus<span className={theme.textClass}>Q</span>
         </h1>
         <p className="mt-2.5 text-sm text-muted-foreground">
-          Your AI advisor for <span className="text-foreground font-medium">{campusName}</span>
+          AI academic assistant for <span className="text-foreground font-medium">{campusName}</span>
         </p>
       </div>
 
