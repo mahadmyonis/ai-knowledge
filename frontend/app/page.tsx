@@ -83,7 +83,7 @@ export default function LandingPage() {
             href="/chat"
             className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold px-7 py-3.5 rounded-xl transition-colors shadow-sm"
           >
-            Try it free — no account needed
+            Try it free — sign up in seconds
             <ArrowRight className="size-4" />
           </Link>
           <Link
@@ -95,7 +95,7 @@ export default function LandingPage() {
         </div>
 
         <p className="mt-7 text-xs text-zinc-400 tracking-wide">
-          3,800+ courses · 84 programs · Academic regulations · Free during beta
+          3,800+ courses · 84 programs · Academic regulations · Free account · Beta
         </p>
       </section>
 
