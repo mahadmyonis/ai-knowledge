@@ -8,9 +8,7 @@ import {
   ChevronRight,
   Database,
   AlertCircle,
-  ShieldCheck,
   MessageSquare,
-  GraduationCap,
   BookOpen,
   BarChart2,
   Sparkles,
@@ -22,7 +20,7 @@ import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useCampus } from "./campus-context"
 
-export type View = "chat" | "planner" | "programs" | "compare" | "eligible"
+export type View = "chat" | "programs" | "compare"
 
 export interface ChatSession {
   id: string
@@ -45,10 +43,8 @@ interface SidebarProps {
 
 const NAV_ITEMS: { view: View; icon: React.ElementType; label: string }[] = [
   { view: "chat", icon: MessageSquare, label: "Chat" },
-  { view: "planner", icon: GraduationCap, label: "Degree Planner" },
   { view: "programs", icon: BookOpen, label: "Programs" },
-  { view: "compare", icon: BarChart2, label: "Compare" },
-  { view: "eligible", icon: Sparkles, label: "What Can I Take?" },
+  { view: "compare", icon: BarChart2, label: "Compare Courses" },
 ]
 
 export function Sidebar({

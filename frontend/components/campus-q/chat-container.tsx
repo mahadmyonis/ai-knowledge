@@ -12,9 +12,7 @@ import { CourseCard } from "./course-card"
 import { FeedbackModal } from "./feedback-modal"
 import { PrereqVisualizer } from "./prereq-visualizer"
 import { CourseCompare } from "./course-compare"
-import { DegreePlanner } from "./degree-planner"
 import { ProgramExplorer } from "./program-explorer"
-import { WhatCanITake } from "./what-can-i-take"
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 const SESSIONS_KEY = "campusq-sessions"
@@ -250,10 +248,8 @@ export function ChatContainer() {
   }
 
   const renderView = () => {
-    if (currentView === "planner") return <DegreePlanner />
     if (currentView === "programs") return <ProgramExplorer />
     if (currentView === "compare") return <CourseCompare />
-    if (currentView === "eligible") return <WhatCanITake />
     return null
   }
 
@@ -395,10 +391,8 @@ export function ChatContainer() {
         <nav className="md:hidden flex border-t border-border/50 bg-card/80 backdrop-blur-sm">
           {[
             { view: "chat" as View, label: "Chat", icon: "💬" },
-            { view: "planner" as View, label: "Planner", icon: "📅" },
             { view: "programs" as View, label: "Programs", icon: "🎓" },
             { view: "compare" as View, label: "Compare", icon: "⚖️" },
-            { view: "eligible" as View, label: "Eligible", icon: "✨" },
           ].map(({ view, label, icon }) => (
             <button
               key={view}

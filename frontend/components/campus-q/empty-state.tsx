@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { GitBranch, BarChart2, GraduationCap, MessageSquare, ArrowRight } from "lucide-react"
+import { BarChart2, BookOpen, MessageSquare, ArrowRight } from "lucide-react"
 import { useCampus, campusThemes } from "./campus-context"
 import { cn } from "@/lib/utils"
 
@@ -27,16 +27,10 @@ const TOOLS = [
     action: "chat" as const,
   },
   {
-    icon: GraduationCap,
-    title: "Degree Planner",
-    description: "Drag-and-drop your 4-year course schedule.",
-    action: "planner" as const,
-  },
-  {
-    icon: GitBranch,
-    title: "Prereq Tree",
-    description: "See the full prerequisite chain for any course.",
-    action: "prereq" as const,
+    icon: BookOpen,
+    title: "Program Explorer",
+    description: "Browse all Carleton programs and their course requirements.",
+    action: "programs" as const,
   },
   {
     icon: BarChart2,
@@ -132,7 +126,7 @@ export function EmptyState({ onSuggestionClick, onViewChange }: EmptyStateProps)
         </div>
 
         {/* Tool grid */}
-        <div className="grid grid-cols-2 gap-3 w-full">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full">
           {TOOLS.map((tool) => {
             const Icon = tool.icon
             const isChat = tool.action === "chat"
