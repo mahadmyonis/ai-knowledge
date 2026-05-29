@@ -59,13 +59,13 @@ export default function LandingPage() {
       {/* Hero */}
       <section className="flex-1 flex flex-col items-center justify-center text-center px-6 py-24 md:py-36">
 
-        {/* Beta badge */}
+        {/* Badge */}
         <div className="inline-flex items-center gap-2 bg-red-50 border border-red-100 text-red-600 text-xs font-semibold px-3 py-1.5 rounded-full mb-8">
           <span className="relative flex size-1.5">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75" />
             <span className="relative inline-flex rounded-full size-1.5 bg-red-500" />
           </span>
-          Now in beta · Carleton University
+          Built for Carleton students, by Carleton students
         </div>
 
         <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold tracking-tight leading-[1.06] max-w-3xl text-zinc-900">

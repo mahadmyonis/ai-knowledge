@@ -63,7 +63,8 @@ export default function AboutPage() {
             and built an AI that answers questions from it directly. No fluff, no guessing, no Reddit threads from 2019.
           </p>
           <p className="text-zinc-500 leading-relaxed text-sm">
-            CampusQ is currently in beta. We're testing it with real students, collecting feedback, and improving it every week.
+            Built for Carleton students, by Carleton students. We know the problem because we lived it.
+            CampusQ is currently in beta — we're testing it with real students, collecting feedback, and improving it every week.
           </p>
         </section>
 
