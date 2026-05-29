@@ -1,93 +1,146 @@
 import Link from "next/link"
-import { ArrowRight, GitBranch, GraduationCap, BarChart2, MessageSquare } from "lucide-react"
+import { ArrowRight, MessageSquare, BookOpen, BarChart2, Zap } from "lucide-react"
 
 const FEATURES = [
   {
     icon: MessageSquare,
-    title: "Course lookup",
-    description: "Ask anything about any Carleton course in plain English.",
+    title: "Ask anything",
+    description: "Course details, prerequisites, graduation requirements, policies — answered instantly from the official calendar.",
   },
   {
-    icon: GitBranch,
-    title: "Prerequisite tree",
-    description: "See the full dependency chain for any course, visually.",
-  },
-  {
-    icon: GraduationCap,
-    title: "Degree planner",
-    description: "Map out your 4-year schedule with drag-and-drop.",
+    icon: BookOpen,
+    title: "Program Explorer",
+    description: "Browse every Carleton program and stream. See exactly what courses you need, year by year.",
   },
   {
     icon: BarChart2,
-    title: "Course comparison",
-    description: "Compare up to 3 courses side by side.",
+    title: "Compare Courses",
+    description: "Put up to 3 courses side by side. Credits, prerequisites, descriptions — all in one view.",
   },
+  {
+    icon: Zap,
+    title: "Instant answers",
+    description: "No waiting, no PDFs, no 3-week advisor queue. The calendar, made searchable.",
+  },
+]
+
+const QUESTIONS = [
+  "What are the prerequisites for SYSC 3110?",
+  "What courses are in year 2 of Computer Systems Engineering?",
+  "What is the CGPA requirement to stay in Engineering?",
+  "How many credits do I need to graduate from Computer Science?",
+  "What is COMP 2804 about?",
 ]
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-white text-zinc-900 flex flex-col">
+    <div className="min-h-screen bg-[#fafaf9] text-zinc-900 flex flex-col">
 
       {/* Nav */}
-      <nav className="sticky top-0 z-50 border-b border-zinc-100 bg-white/90 backdrop-blur-xl">
-        <div className="max-w-4xl mx-auto px-6 h-14 flex items-center justify-between">
-          <span className="text-sm font-semibold tracking-tight">
+      <nav className="sticky top-0 z-50 border-b border-zinc-200/60 bg-[#fafaf9]/90 backdrop-blur-xl">
+        <div className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
+          <span className="text-sm font-bold tracking-tight">
             Campus<span className="text-red-600">Q</span>
           </span>
-          <div className="flex items-center gap-6">
-            <Link href="/about" className="text-sm text-zinc-400 hover:text-zinc-900 transition-colors">
+          <div className="flex items-center gap-5">
+            <Link href="/about" className="text-sm text-zinc-400 hover:text-zinc-800 transition-colors hidden sm:block">
               About
             </Link>
             <Link
               href="/chat"
-              className="inline-flex items-center gap-1.5 bg-zinc-900 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-zinc-700 transition-colors"
+              className="inline-flex items-center gap-1.5 bg-zinc-900 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-zinc-800 transition-colors"
             >
-              Open app <ArrowRight className="size-3.5" />
+              Try the beta <ArrowRight className="size-3.5" />
             </Link>
           </div>
         </div>
       </nav>
 
       {/* Hero */}
-      <section className="flex-1 flex flex-col items-center justify-center text-center px-6 py-32">
-        <p className="text-xs font-medium text-red-600 uppercase tracking-widest mb-5">
-          Made by a Carleton student
-        </p>
-        <h1 className="text-5xl md:text-6xl font-bold tracking-tight leading-[1.08] max-w-2xl text-zinc-900">
-          Stop digging through the Carleton calendar.
+      <section className="flex-1 flex flex-col items-center justify-center text-center px-6 py-24 md:py-36">
+
+        {/* Beta badge */}
+        <div className="inline-flex items-center gap-2 bg-red-50 border border-red-100 text-red-600 text-xs font-semibold px-3 py-1.5 rounded-full mb-8">
+          <span className="relative flex size-1.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75" />
+            <span className="relative inline-flex rounded-full size-1.5 bg-red-500" />
+          </span>
+          Now in beta · Carleton University
+        </div>
+
+        <h1 className="text-5xl md:text-7xl font-bold tracking-tight leading-[1.06] max-w-3xl text-zinc-900">
+          Your AI advisor
+          <br />
+          <span className="text-red-600">for Carleton.</span>
         </h1>
-        <p className="mt-6 text-lg text-zinc-500 max-w-md leading-relaxed">
-          Instant answers about courses, prerequisites, and programs — sourced from the official academic calendar.
+
+        <p className="mt-6 text-lg md:text-xl text-zinc-500 max-w-xl leading-relaxed">
+          Instant answers about courses, prerequisites, programs, and regulations — sourced directly from the official academic calendar.
         </p>
-        <div className="flex items-center gap-3 mt-10">
+
+        <div className="flex flex-col sm:flex-row items-center gap-3 mt-10">
           <Link
             href="/chat"
-            className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold px-6 py-3 rounded-xl transition-colors"
+            className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold px-7 py-3.5 rounded-xl transition-colors shadow-sm"
           >
-            Try it free
+            Try it free — no account needed
             <ArrowRight className="size-4" />
           </Link>
           <Link
             href="/about"
-            className="text-sm text-zinc-500 hover:text-zinc-900 transition-colors"
+            className="text-sm text-zinc-400 hover:text-zinc-800 transition-colors"
           >
             Learn more →
           </Link>
         </div>
-        <p className="mt-8 text-xs text-zinc-400">
-          Free · No account required · 7,700+ courses indexed
+
+        <p className="mt-7 text-xs text-zinc-400 tracking-wide">
+          3,800+ courses · 84 programs · Academic regulations · Free during beta
         </p>
       </section>
 
+      {/* Example questions */}
+      <section className="border-t border-zinc-200/60 py-14 px-6 bg-white">
+        <div className="max-w-3xl mx-auto">
+          <p className="text-xs font-semibold text-zinc-400 uppercase tracking-widest text-center mb-8">
+            Questions students actually ask
+          </p>
+          <div className="flex flex-col gap-2">
+            {QUESTIONS.map((q) => (
+              <Link
+                key={q}
+                href="/chat"
+                className="group flex items-center justify-between px-5 py-3.5 rounded-xl border border-zinc-200 bg-zinc-50 hover:bg-white hover:border-zinc-300 hover:shadow-sm transition-all text-sm text-zinc-600 hover:text-zinc-900"
+              >
+                <span>{q}</span>
+                <ArrowRight className="size-3.5 text-zinc-300 group-hover:text-zinc-500 transition-colors shrink-0 ml-3" />
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Features */}
-      <section className="border-t border-zinc-100 bg-zinc-50/50 py-20 px-6">
-        <div className="max-w-4xl mx-auto">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+      <section className="border-t border-zinc-200/60 py-20 px-6 bg-[#fafaf9]">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-14">
+            <h2 className="text-2xl md:text-3xl font-bold text-zinc-900 tracking-tight">
+              Everything you need. Nothing you don't.
+            </h2>
+            <p className="mt-3 text-zinc-500 text-sm max-w-md mx-auto">
+              Built specifically for Carleton students. No general AI fluff — just your calendar, made useful.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {FEATURES.map((f) => {
               const Icon = f.icon
               return (
-                <div key={f.title} className="flex flex-col gap-3">
-                  <div className="flex items-center justify-center size-9 rounded-lg bg-red-50 border border-red-100">
+                <div
+                  key={f.title}
+                  className="flex items-start gap-4 p-5 rounded-2xl border border-zinc-200 bg-white hover:shadow-sm transition-shadow"
+                >
+                  <div className="shrink-0 size-9 rounded-xl bg-red-50 border border-red-100 flex items-center justify-center">
                     <Icon className="size-4 text-red-600" />
                   </div>
                   <div>
@@ -101,15 +154,34 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* CTA banner */}
+      <section className="border-t border-zinc-200/60 py-20 px-6 bg-zinc-900">
+        <div className="max-w-2xl mx-auto text-center">
+          <h2 className="text-3xl md:text-4xl font-bold text-white tracking-tight">
+            We're in beta and we want your feedback.
+          </h2>
+          <p className="mt-4 text-zinc-400 text-base max-w-md mx-auto leading-relaxed">
+            Try CampusQ, ask real questions, and tell us what's wrong. Every report makes it better.
+          </p>
+          <Link
+            href="/chat"
+            className="inline-flex items-center gap-2 bg-white text-zinc-900 text-sm font-semibold px-7 py-3.5 rounded-xl hover:bg-zinc-100 transition-colors mt-8"
+          >
+            Open CampusQ
+            <ArrowRight className="size-4" />
+          </Link>
+        </div>
+      </section>
+
       {/* Footer */}
-      <footer className="border-t border-zinc-100 px-6 py-6">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <span className="text-sm font-semibold">
-            Campus<span className="text-red-600">Q</span>
+      <footer className="border-t border-zinc-200/60 px-6 py-6 bg-zinc-900">
+        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+          <span className="text-sm font-bold text-white">
+            Campus<span className="text-red-500">Q</span>
           </span>
-          <div className="flex items-center gap-5 text-xs text-zinc-400">
-            <Link href="/about" className="hover:text-zinc-900 transition-colors">About</Link>
-            <Link href="/chat" className="hover:text-zinc-900 transition-colors">App</Link>
+          <div className="flex items-center gap-5 text-xs text-zinc-500">
+            <Link href="/chat" className="hover:text-white transition-colors">App</Link>
+            <Link href="/about" className="hover:text-white transition-colors">About</Link>
             <span>Not affiliated with Carleton University</span>
           </div>
         </div>
