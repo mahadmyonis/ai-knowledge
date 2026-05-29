@@ -292,7 +292,7 @@ async def chat_endpoint(
         ).data[0].embedding
 
         all_matches = []
-        for ns in ["courses", "programs", "policies"]:
+        for ns in ["courses", "programs", "regulations"]:
             ns_results = index.query(
                 vector=query_embedding,
                 top_k=8,
@@ -430,7 +430,7 @@ async def chat_stream(
             ).data[0].embedding
 
             all_matches = []
-            for ns in ["courses", "programs", "policies"]:
+            for ns in ["courses", "programs", "regulations"]:
                 ns_results = index.query(
                     vector=query_embedding,
                     top_k=8,
