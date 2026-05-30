@@ -102,37 +102,61 @@ export default function LandingPage() {
       </section>
 
       {/* Example Q&A */}
-      <section className="border-t border-zinc-200/60 bg-white py-16 px-6">
-        <div className="max-w-2xl mx-auto">
+      <section className="border-t border-zinc-200/60 bg-white py-20 px-6">
+        <div className="max-w-3xl mx-auto">
           <p className="text-xs font-semibold text-zinc-400 uppercase tracking-widest text-center mb-10">
             See it in action
           </p>
-          <div className="flex flex-col gap-4">
-            {EXAMPLE_QA.map((item, i) => (
-              <div key={i} className="rounded-2xl border border-zinc-200 overflow-hidden">
-                {/* Question */}
-                <div className="flex items-start gap-3 px-5 py-4 bg-zinc-50">
-                  <span className="shrink-0 size-6 rounded-lg bg-zinc-200 flex items-center justify-center text-[11px] font-bold text-zinc-500 mt-0.5">
-                    You
-                  </span>
-                  <p className="text-sm text-zinc-700 leading-relaxed">{item.q}</p>
+
+          {/* Mock app window */}
+          <div className="rounded-2xl overflow-hidden border border-zinc-200 shadow-xl shadow-zinc-200/60">
+
+            {/* Window chrome */}
+            <div className="bg-zinc-100 border-b border-zinc-200 px-4 py-3 flex items-center gap-2">
+              <span className="size-3 rounded-full bg-red-400" />
+              <span className="size-3 rounded-full bg-yellow-400" />
+              <span className="size-3 rounded-full bg-green-400" />
+              <span className="mx-auto text-xs font-medium text-zinc-400">CampusQ</span>
+            </div>
+
+            {/* Conversation */}
+            <div className="bg-[#fafaf9] p-6 flex flex-col gap-6">
+              {EXAMPLE_QA.map((item, i) => (
+                <div key={i} className="flex flex-col gap-3">
+                  {/* User bubble */}
+                  <div className="flex justify-end">
+                    <div className="max-w-[75%] bg-zinc-900 text-white text-sm px-4 py-2.5 rounded-2xl rounded-br-sm leading-relaxed">
+                      {item.q}
+                    </div>
+                  </div>
+                  {/* Answer */}
+                  <div className="flex items-start gap-2.5">
+                    <div className="shrink-0 size-6 rounded-md bg-red-600 flex items-center justify-center text-[10px] font-bold text-white mt-0.5">
+                      Q
+                    </div>
+                    <div className="text-sm text-zinc-600 leading-relaxed pt-0.5">{item.a}</div>
+                  </div>
                 </div>
-                {/* Answer */}
-                <div className="flex items-start gap-3 px-5 py-4 bg-white border-t border-zinc-100">
-                  <span className="shrink-0 size-6 rounded-lg bg-red-600 flex items-center justify-center text-[11px] font-bold text-white mt-0.5">
-                    Q
-                  </span>
-                  <p className="text-sm text-zinc-600 leading-relaxed">{item.a}</p>
-                </div>
+              ))}
+            </div>
+
+            {/* Fake input */}
+            <div className="bg-white border-t border-zinc-200 px-4 py-3 flex items-center gap-3">
+              <div className="flex-1 bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-2.5 text-xs text-zinc-400">
+                Ask anything about Carleton…
               </div>
-            ))}
+              <div className="size-8 rounded-xl bg-red-600 flex items-center justify-center shrink-0">
+                <ArrowRight className="size-3.5 text-white" />
+              </div>
+            </div>
           </div>
+
           <div className="mt-8 text-center">
             <Link
               href="/chat"
               className="inline-flex items-center gap-2 text-sm font-semibold text-red-600 hover:text-red-700 transition-colors"
             >
-              Ask your own question <ArrowRight className="size-3.5" />
+              Try it yourself <ArrowRight className="size-3.5" />
             </Link>
           </div>
         </div>
@@ -191,23 +215,47 @@ export default function LandingPage() {
       </section>
 
       {/* Bottom CTA */}
-      <section className="border-t border-zinc-200/60 py-20 px-6 bg-zinc-900">
-        <div className="max-w-xl mx-auto text-center">
-          <h2 className="text-3xl md:text-4xl font-bold text-white tracking-tight leading-tight">
+      <section className="border-t border-zinc-200/60 py-20 px-6 relative overflow-hidden bg-zinc-900">
+        {/* Subtle red glow */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="size-[600px] rounded-full bg-red-600/10 blur-[120px]" />
+        </div>
+
+        <div className="max-w-xl mx-auto text-center relative z-10">
+          <div className="inline-flex items-center gap-2 bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-semibold px-3 py-1.5 rounded-full mb-6">
+            <span className="relative flex size-1.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+              <span className="relative inline-flex rounded-full size-1.5 bg-red-400" />
+            </span>
+            Now in beta
+          </div>
+
+          <h2 className="text-3xl md:text-5xl font-bold text-white tracking-tight leading-[1.1]">
             Your questions,
-            <br />answered now.
+            <br />
+            <span className="text-red-500">answered now.</span>
           </h2>
-          <p className="mt-4 text-zinc-400 text-sm max-w-sm mx-auto leading-relaxed">
-            Free to use. No advisor appointment needed. Built on the official Carleton calendar.
+          <p className="mt-5 text-zinc-400 text-sm max-w-sm mx-auto leading-relaxed">
+            Free account. No advisor queue. Built on the official Carleton academic calendar.
           </p>
-          <Link
-            href="/chat"
-            className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold px-7 py-3.5 rounded-xl transition-colors mt-8"
-          >
-            Get started free
-            <ArrowRight className="size-4" />
-          </Link>
-          <p className="mt-4 text-xs text-zinc-600">
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mt-8">
+            <Link
+              href="/chat"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold px-7 py-3.5 rounded-xl transition-colors"
+            >
+              Get started free
+              <ArrowRight className="size-4" />
+            </Link>
+            <Link
+              href="/about"
+              className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors"
+            >
+              Learn more →
+            </Link>
+          </div>
+
+          <p className="mt-6 text-xs text-zinc-600">
             Not affiliated with Carleton University
           </p>
         </div>
