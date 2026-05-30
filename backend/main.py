@@ -1,6 +1,8 @@
 import os
 import json
 import re
+import time
+import uuid
 from datetime import datetime
 from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
@@ -13,6 +15,56 @@ import fitz  # PyMuPDF
 load_dotenv()
 
 app = FastAPI()
+
+# ── Logging setup ─────────────────────────────────────────────────────────────
+
+LOG_DIR = os.path.dirname(os.path.abspath(__file__))
+
+def _log(filename: str, data: dict):
+    """Append a JSON line to a log file. Thread-safe for single-process use."""
+    path = os.path.join(LOG_DIR, filename)
+    line = json.dumps(data, ensure_ascii=False) + "\n"
+    with open(path, "a", encoding="utf-8") as f:
+        f.write(line)
+
+def log_query(
+    query: str,
+    query_type: str,          # "course_lookup" | "rag" | "stream_course" | "stream_rag"
+    chunks_retrieved: int,
+    top_score: float | None,
+    course_codes_found: list[str],
+    response_ms: int,
+    had_context: bool,
+    user_id: str = "anonymous",
+):
+    _log("queries.log", {
+        "ts": datetime.utcnow().isoformat(),
+        "id": str(uuid.uuid4())[:8],
+        "user": user_id,
+        "type": query_type,
+        "query": query[:300],
+        "chunks": chunks_retrieved,
+        "top_score": round(top_score, 3) if top_score is not None else None,
+        "courses_found": course_codes_found,
+        "had_context": had_context,
+        "ms": response_ms,
+    })
+
+def log_course_miss(course_code: str, query: str):
+    """Log when a course code in a query isn't found in Pinecone."""
+    _log("course_misses.log", {
+        "ts": datetime.utcnow().isoformat(),
+        "course": course_code,
+        "query": query[:200],
+    })
+
+def log_no_context(query: str, query_type: str):
+    """Log when RAG returns zero usable chunks — indicates a data gap."""
+    _log("no_context.log", {
+        "ts": datetime.utcnow().isoformat(),
+        "type": query_type,
+        "query": query[:300],
+    })
 
 app.add_middleware(
     CORSMiddleware,
@@ -222,10 +274,12 @@ async def submit_feedback(
     message: str = Form(...),
     query: str = Form(""),
 ):
-    timestamp = datetime.utcnow().isoformat()
-    log_line = f"[{timestamp}] Query: {repr(query)} | Feedback: {repr(message)}\n"
-    with open("feedback.log", "a", encoding="utf-8") as f:
-        f.write(log_line)
+    _log("feedback.log", {
+        "ts": datetime.utcnow().isoformat(),
+        "id": str(uuid.uuid4())[:8],
+        "query": query[:300],
+        "message": message[:1000],
+    })
     return {"success": True}
 
 
@@ -236,6 +290,7 @@ async def chat_endpoint(
     file: UploadFile = File(None),
 ):
     user_query = question
+    t_start = time.time()
     print(f"Searching database for: {user_query}")
 
     course_matches = re.findall(r'([a-zA-Z]{4})\s*(\d{4})', user_query, re.IGNORECASE)
@@ -275,11 +330,24 @@ async def chat_endpoint(
                 not_found_codes.append(clean_code)
 
         if structured_courses:
+            ms = int((time.time() - t_start) * 1000)
+            log_query(
+                query=user_query,
+                query_type="course_lookup",
+                chunks_retrieved=len(structured_courses),
+                top_score=None,
+                course_codes_found=[c["courseCode"] for c in structured_courses],
+                response_ms=ms,
+                had_context=True,
+            )
             found_msg = f"Found {len(structured_courses)} course(s) for you."
             if not_found_codes:
                 found_msg += f" Note: {', '.join(not_found_codes)} were not found via direct lookup."
             return {"answer": found_msg, "courses": structured_courses, "sources": sources}
 
+        # Log any missed codes before falling through to RAG
+        for code in not_found_codes:
+            log_course_miss(code, user_query)
         print(f"Interceptor missed all codes {not_found_codes} — falling through to RAG")
 
     attachment_text = ""
@@ -348,9 +416,21 @@ async def chat_endpoint(
                     "snippet": doc_text[:150] + "...",
                 })
 
+        top_score = all_matches[0].score if all_matches else None
         print(f"RAG: {chunks_used} chunks passed threshold {SIMILARITY_THRESHOLD}")
 
         if not context_text and not attachment_text:
+            log_no_context(user_query, "rag")
+            ms = int((time.time() - t_start) * 1000)
+            log_query(
+                query=user_query,
+                query_type="rag",
+                chunks_retrieved=0,
+                top_score=top_score,
+                course_codes_found=[],
+                response_ms=ms,
+                had_context=False,
+            )
             return {
                 "answer": (
                     "I don't have enough information in my knowledge base to answer that confidently. "
@@ -413,9 +493,29 @@ STUDENT-UPLOADED DOCUMENT:
                 "snippet": "File uploaded directly to this conversation.",
             })
 
+        ms = int((time.time() - t_start) * 1000)
+        log_query(
+            query=user_query,
+            query_type="rag",
+            chunks_retrieved=chunks_used,
+            top_score=top_score,
+            course_codes_found=[],
+            response_ms=ms,
+            had_context=True,
+        )
         return {"answer": response.choices[0].message.content, "sources": sources}
 
     except Exception as e:
+        ms = int((time.time() - t_start) * 1000)
+        log_query(
+            query=user_query,
+            query_type="rag_error",
+            chunks_retrieved=0,
+            top_score=None,
+            course_codes_found=[],
+            response_ms=ms,
+            had_context=False,
+        )
         print(f"Error: {e}")
         return {"answer": "Sorry, CampusQ ran into an error processing your request. Please try again.", "sources": []}
 
@@ -427,11 +527,14 @@ async def chat_stream(
 ):
     user_query = question
 
+    t_start = time.time()
+
     async def generate():
         course_matches = re.findall(r'([a-zA-Z]{4})\s*(\d{4})', user_query, re.IGNORECASE)
 
         if course_matches:
             structured_courses = []
+            missed_codes = []
             seen_codes = set()
 
             for match in course_matches:
@@ -447,10 +550,24 @@ async def chat_stream(
                         metadata = result["vectors"][course_id]["metadata"]
                         structured = parse_course_from_metadata(metadata, clean_code)
                         structured_courses.append(structured)
+                    else:
+                        missed_codes.append(clean_code)
+                        log_course_miss(clean_code, user_query)
                 except Exception as e:
                     print(f"Stream interceptor error: {e}")
+                    missed_codes.append(clean_code)
 
             if structured_courses:
+                ms = int((time.time() - t_start) * 1000)
+                log_query(
+                    query=user_query,
+                    query_type="stream_course",
+                    chunks_retrieved=len(structured_courses),
+                    top_score=None,
+                    course_codes_found=[c["courseCode"] for c in structured_courses],
+                    response_ms=ms,
+                    had_context=True,
+                )
                 count = len(structured_courses)
                 text = f"Here {'are' if count > 1 else 'is'} the {'courses' if count > 1 else 'course'} you asked about."
                 yield f"data: {json.dumps({'type': 'token', 'content': text})}\n\n"
@@ -465,8 +582,6 @@ async def chat_stream(
                 model="text-embedding-3-small",
             ).data[0].embedding
 
-            # Detect program queries — they need many more chunks than course/policy queries
-            # because a full 4-year program can span 8-12 sections
             is_program_query = any(kw in user_query.lower() for kw in [
                 "program", "required courses", "year 1", "year 2", "year 3", "year 4",
                 "stream", "engineering", "bachelor", "degree requirements", "curriculum",
@@ -493,6 +608,9 @@ async def chat_stream(
             all_matches = all_matches[:keep_total]
 
             context_text = ""
+            chunks_used = 0
+            top_score = all_matches[0].score if all_matches else None
+
             for match in all_matches:
                 is_program_chunk = "program" in match.metadata or "section" in match.metadata
                 if not is_program_query or not is_program_chunk:
@@ -502,6 +620,10 @@ async def chat_stream(
                 doc_text = metadata.get("text", "")
                 doc_source = metadata.get("source", "Unknown Source")
                 context_text += f"\n--- Source: {doc_source} (relevance: {match.score:.2f}) ---\n{doc_text}\n"
+                chunks_used += 1
+
+            if not context_text:
+                log_no_context(user_query, "stream_rag")
 
             system_prompt = f"""You are CampusQ, an AI assistant for Carleton University students. You answer questions about courses, programs, prerequisites, regulations, and academic life using the Carleton Academic Calendar.
 
@@ -552,9 +674,31 @@ CONTEXT:
                     content = chunk.choices[0].delta.content
                     yield f"data: {json.dumps({'type': 'token', 'content': content})}\n\n"
 
+            # Log after stream completes
+            ms = int((time.time() - t_start) * 1000)
+            log_query(
+                query=user_query,
+                query_type="stream_rag",
+                chunks_retrieved=chunks_used,
+                top_score=top_score,
+                course_codes_found=[],
+                response_ms=ms,
+                had_context=bool(context_text),
+            )
+
             yield f"data: {json.dumps({'type': 'done'})}\n\n"
 
         except Exception as e:
+            ms = int((time.time() - t_start) * 1000)
+            log_query(
+                query=user_query,
+                query_type="stream_error",
+                chunks_retrieved=0,
+                top_score=None,
+                course_codes_found=[],
+                response_ms=ms,
+                had_context=False,
+            )
             print(f"Stream error: {e}")
             yield f"data: {json.dumps({'type': 'token', 'content': 'Sorry, CampusQ ran into an error. Please try again.'})}\n\n"
             yield f"data: {json.dumps({'type': 'done'})}\n\n"
