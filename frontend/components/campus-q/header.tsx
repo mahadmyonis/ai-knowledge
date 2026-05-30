@@ -39,7 +39,7 @@ export function Header({ isDark, onToggleDark }: HeaderProps) {
           isSignedIn ? (
             <UserButton afterSignOutUrl="/" appearance={{ elements: { avatarBox: "size-7" } }} />
           ) : (
-            <SignInButton mode="modal">
+            <SignInButton mode="redirect" redirectUrl="/sign-in">
               <button className="text-xs font-medium px-3 py-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
                 Sign in
               </button>
