@@ -111,11 +111,11 @@ export default function AboutPage() {
             the app, or reach out directly:
           </p>
           <a
-            href="mailto:campusq@proton.me"
+            href="mailto:mahadmyonis@gmail.com"
             className="inline-flex items-center gap-2 text-sm text-red-600 hover:text-red-700 transition-colors"
           >
             <Mail className="size-4" />
-            campusq@proton.me
+            mahadmyonis@gmail.com
           </a>
         </section>
 
