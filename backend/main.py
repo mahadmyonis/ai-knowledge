@@ -460,7 +460,7 @@ async def chat_endpoint(
         keep_total = 30 if is_program_query else 10
 
         all_matches = []
-        for ns in ["courses", "programs", "regulations", "registrar", "services", "dates", "tuition", "library"]:
+        for ns in ["courses", "programs", "regulations", "registrar", "services", "dates", "tuition", "library", "facts"]:
             top_k = top_k_programs if ns == "programs" else top_k_other
             ns_results = index.query(
                 vector=query_embedding,
@@ -535,6 +535,7 @@ RULES:
 6. If the context doesn't have the answer, say: "I don't have that in my database — check calendar.carleton.ca or speak with your academic advisor."
 7. Be concise. No walls of text. No unnecessary caveats.
 8. Only mention calendar.carleton.ca when you genuinely can't answer — not as a reflex.
+9. OUT-OF-SCOPE: If asked about professor quality, ratings, or teaching style, say: "I don't have professor ratings — try RateMyProfessors.ca for student reviews." Never redirect these to calendar.carleton.ca.
 
 CLARIFYING QUESTIONS — IMPORTANT:
 Some questions are too vague to answer accurately without knowing the student's program. If the question is program-dependent and the student hasn't specified their program, ask ONE short clarifying question instead of guessing.
@@ -694,7 +695,7 @@ async def chat_stream(
             keep_total = 30 if is_program_query else 10
 
             all_matches = []
-            for ns in ["courses", "programs", "regulations", "registrar", "services", "dates", "tuition", "library"]:
+            for ns in ["courses", "programs", "regulations", "registrar", "services", "dates", "tuition", "library", "facts"]:
                 top_k = top_k_programs if ns == "programs" else top_k_other
                 ns_results = index.query(
                     vector=query_embedding,
@@ -749,6 +750,7 @@ RULES:
 6. If the context doesn't have the answer, say: "I don't have that in my database — check calendar.carleton.ca or speak with your academic advisor."
 7. Be concise. No walls of text. No unnecessary caveats.
 8. Only mention calendar.carleton.ca when you genuinely can't answer — not as a reflex.
+9. OUT-OF-SCOPE: If asked about professor quality, ratings, or teaching style, say: "I don't have professor ratings — try RateMyProfessors.ca for student reviews." Never redirect these to calendar.carleton.ca.
 
 CLARIFYING QUESTIONS — IMPORTANT:
 Some questions are too vague to answer accurately without knowing the student's program. If the question is program-dependent and the student hasn't specified their program, ask ONE short clarifying question instead of guessing.
