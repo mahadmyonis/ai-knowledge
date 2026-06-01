@@ -34,8 +34,8 @@ EMBED_MODEL = "text-embedding-3-small"
 # ── All curated URLs ──────────────────────────────────────────────────────────
 
 URLS = [
-    # Academic dates & key deadlines
-    ("Academic Dates",              "https://carleton.ca/registration/academic-dates/"),
+    # NOTE: Academic dates are handled by scrape_dates.py (structured, one
+    # vector per deadline) — the raw dates page chunks poorly, so it's excluded here.
 
     # New student onboarding
     ("New Student Checklist",       "https://carleton.ca/registration/new-ug/new-student-checklist/"),
