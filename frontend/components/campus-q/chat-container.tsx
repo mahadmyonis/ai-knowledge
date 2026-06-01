@@ -170,6 +170,9 @@ export function ChatContainer() {
     setIsLoading(true)
     setExpandedPrereq(null)
 
+    // Detect prereq-chain queries so we can auto-expand the visualizer
+    const isPrereqQuery = /prereq(uisite)?(\s+chain|\s+tree)?|show.*(prereq|chain|tree)|chain for|tree for/i.test(queryText)
+
     // Track analytics
     try { track("chat_query", { query: queryText.slice(0, 100) }) } catch {}
 
@@ -228,6 +231,10 @@ export function ChatContainer() {
                   m.id === assistantId ? { ...m, courseCards: parsed.data } : m
                 )
               )
+              // Auto-expand prereq tree if the user explicitly asked for it
+              if (isPrereqQuery && codes.length === 1) {
+                setExpandedPrereq(codes[0])
+              }
             } else if (parsed.type === "sources") {
               setMessages((prev) =>
                 prev.map((m) =>
