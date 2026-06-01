@@ -88,16 +88,14 @@ export default function LandingPage() {
               Built for Carleton students
             </div>
 
-            <h1 className="text-[42px] sm:text-5xl lg:text-[52px] font-bold tracking-tight leading-[1.08] text-zinc-900">
-              Stop digging
+            <h1 className="text-[42px] sm:text-5xl lg:text-[56px] font-bold tracking-tight leading-[1.06] text-zinc-900">
+              Academic clarity,
               <br />
-              through the
-              <br />
-              <span className="text-red-600">calendar.</span>
+              <span className="text-red-600">instantly.</span>
             </h1>
 
             <p className="mt-5 text-zinc-500 text-base leading-relaxed max-w-sm">
-              Ask anything about courses, programs, prerequisites, or deadlines. Get a real answer in seconds.
+              You've got enough to figure out. Your course questions shouldn't be one of them.
             </p>
 
             <div className="flex items-center gap-3 mt-8">
