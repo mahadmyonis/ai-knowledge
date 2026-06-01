@@ -23,7 +23,9 @@ app = FastAPI()
 
 # ── Logging setup ─────────────────────────────────────────────────────────────
 
-LOG_DIR = os.path.dirname(os.path.abspath(__file__))
+# On Render: mount a persistent disk at /data so logs survive redeploys.
+# Locally (no /data): falls back to the backend/ directory.
+LOG_DIR = "/data" if os.path.isdir("/data") else os.path.dirname(os.path.abspath(__file__))
 
 def _log(filename: str, data: dict):
     """Append a JSON line to a log file. Thread-safe for single-process use."""
