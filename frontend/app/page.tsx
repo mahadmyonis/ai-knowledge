@@ -152,12 +152,12 @@ export default function LandingPage() {
 
               {/* Fake input */}
               <div className="bg-white border-t border-zinc-100 px-4 py-3 flex items-center gap-2.5">
-                <div className="flex-1 bg-zinc-50 border border-zinc-200 rounded-xl px-3.5 py-2 text-xs text-zinc-400">
+                <Link href="/chat" className="flex-1 bg-zinc-50 border border-zinc-200 rounded-xl px-3.5 py-2 text-xs text-zinc-400 hover:bg-zinc-100 transition-colors">
                   Ask anything about Carleton…
-                </div>
-                <button className="size-8 bg-red-600 rounded-xl flex items-center justify-center shrink-0">
+                </Link>
+                <Link href="/chat" className="size-8 bg-red-600 hover:bg-red-700 rounded-xl flex items-center justify-center shrink-0 transition-colors">
                   <ArrowRight className="size-3.5 text-white" />
-                </button>
+                </Link>
               </div>
             </div>
           </div>
