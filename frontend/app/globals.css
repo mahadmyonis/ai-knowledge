@@ -118,7 +118,22 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html {
+    /* Prevent horizontal overflow on mobile */
+    overflow-x: hidden;
+    /* iOS Safari height fix */
+    height: -webkit-fill-available;
+  }
   body {
     @apply bg-background text-foreground;
+    overflow-x: hidden;
+    /* iOS Safari: ensure body fills full viewport height */
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
   }
+}
+
+/* iOS safe area padding for the bottom nav */
+.safe-area-pb {
+  padding-bottom: max(env(safe-area-inset-bottom), 8px);
 }

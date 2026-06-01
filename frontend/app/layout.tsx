@@ -7,6 +7,13 @@ import './globals.css'
 const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  viewportFit: "cover",
+}
+
 export const metadata: Metadata = {
   title: 'CampusQ',
   description: 'CampusQ is an AI-powered academic assistant for Carleton University students. Look up courses, prerequisites, program requirements, and university policies instantly.',
