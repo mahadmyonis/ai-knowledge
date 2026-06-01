@@ -263,6 +263,18 @@ export function ChatContainer() {
     handleSubmit(suggestion)
   }
 
+  const sendFeedback = (question: string, answer: string, rating: "up" | "down") => {
+    try {
+      const fd = new FormData()
+      fd.append("rating", rating)
+      fd.append("question", question)
+      fd.append("answer", answer)
+      fd.append("session_id", currentSessionId || "none")
+      fetch(`${API_URL}/api/feedback`, { method: "POST", body: fd }).catch(() => {})
+      track("answer_feedback", { rating })
+    } catch {}
+  }
+
   const renderView = () => {
     if (currentView === "programs")  return <ProgramExplorer />
     if (currentView === "compare")   return <CourseCompare />
@@ -332,15 +344,22 @@ export function ChatContainer() {
                 </div>
               ) : (
                 <div className="max-w-2xl mx-auto px-4 md:px-6 py-10 space-y-10">
-                  {messages.map((message) => {
+                  {messages.map((message, idx) => {
                     const codes = message.role === "assistant" ? extractCourseCodes(message.content) : []
                     const suggestions = message.role === "assistant" && !isLoading
                       ? getSuggestions(message, (message.courseCards || []).map(c => c.courseCode))
                       : []
 
+                    // The question this answer responded to (preceding user message)
+                    const precedingQuestion = messages[idx - 1]?.role === "user" ? messages[idx - 1].content : ""
+                    const feedbackHandler =
+                      message.role === "assistant" && message.content !== "" && !isLoading
+                        ? (rating: "up" | "down") => sendFeedback(precedingQuestion, message.content, rating)
+                        : undefined
+
                     return (
                       <div key={message.id}>
-                        <ChatMessage role={message.role} content={message.content} sources={message.sources}>
+                        <ChatMessage role={message.role} content={message.content} sources={message.sources} onFeedback={feedbackHandler}>
                           {message.courseCards && message.courseCards.length > 0 && (
                             <div className="flex flex-col gap-4 mt-3">
                               {message.courseCards.map((card, idx) => (

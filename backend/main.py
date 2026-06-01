@@ -135,6 +135,18 @@ def log_no_context(query: str, query_type: str):
         "query": query[:300],
     })
 
+def log_feedback(session_id: str, question: str, answer: str, rating: str):
+    """Per-answer thumbs up/down — the strongest pitch metric (self-reported helpfulness)."""
+    _log("feedback.log", {
+        "ts": datetime.utcnow().isoformat(),
+        "session": session_id or "none",
+        "rating": rating,                 # "up" | "down"
+        "department": detect_department(question, []),
+        "intent": classify_intent(question),
+        "question": question[:300],
+        "answer": answer[:500],
+    })
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -835,3 +847,16 @@ CONTEXT:
             "Connection": "keep-alive",
         },
     )
+
+
+@app.post("/api/feedback")
+async def feedback_endpoint(
+    rating: str = Form(...),              # "up" | "down"
+    question: str = Form(""),
+    answer: str = Form(""),
+    session_id: str = Form("none"),
+):
+    if rating not in ("up", "down"):
+        return {"ok": False, "error": "rating must be 'up' or 'down'"}
+    log_feedback(session_id, question, answer, rating)
+    return {"ok": True}

@@ -1,9 +1,10 @@
 "use client"
 
+import * as React from "react"
 import { useCampus } from "./campus-context"
 import { cn } from "@/lib/utils"
 import ReactMarkdown from "react-markdown"
-import { ExternalLink } from "lucide-react"
+import { ExternalLink, ThumbsUp, ThumbsDown } from "lucide-react"
 
 interface Source {
   url: string
@@ -14,7 +15,47 @@ interface ChatMessageProps {
   role: "user" | "assistant"
   content: string
   sources?: Source[]
+  onFeedback?: (rating: "up" | "down") => void
   children?: React.ReactNode
+}
+
+function FeedbackButtons({ onFeedback }: { onFeedback: (rating: "up" | "down") => void }) {
+  const [given, setGiven] = React.useState<"up" | "down" | null>(null)
+
+  const handle = (rating: "up" | "down") => {
+    if (given) return
+    setGiven(rating)
+    onFeedback(rating)
+  }
+
+  if (given) {
+    return (
+      <div className="flex items-center gap-1.5 mt-3 text-xs text-muted-foreground/60">
+        {given === "up" ? <ThumbsUp className="size-3" /> : <ThumbsDown className="size-3" />}
+        Thanks for the feedback
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex items-center gap-1 mt-3">
+      <span className="text-[11px] text-muted-foreground/40 mr-1">Was this helpful?</span>
+      <button
+        onClick={() => handle("up")}
+        aria-label="Helpful"
+        className="p-1.5 rounded-md text-muted-foreground/40 hover:text-emerald-500 hover:bg-emerald-500/10 transition-colors"
+      >
+        <ThumbsUp className="size-3.5" />
+      </button>
+      <button
+        onClick={() => handle("down")}
+        aria-label="Not helpful"
+        className="p-1.5 rounded-md text-muted-foreground/40 hover:text-red-400 hover:bg-red-400/10 transition-colors"
+      >
+        <ThumbsDown className="size-3.5" />
+      </button>
+    </div>
+  )
 }
 
 function TypingCursor() {
@@ -71,7 +112,7 @@ function Sources({ sources }: { sources: Source[] }) {
   )
 }
 
-export function ChatMessage({ role, content, sources, children }: ChatMessageProps) {
+export function ChatMessage({ role, content, sources, onFeedback, children }: ChatMessageProps) {
   const { theme } = useCampus()
 
   if (role === "user") {
@@ -148,6 +189,10 @@ export function ChatMessage({ role, content, sources, children }: ChatMessagePro
 
         {sources && sources.length > 0 && content !== "" && (
           <Sources sources={sources} />
+        )}
+
+        {onFeedback && content !== "" && (
+          <FeedbackButtons onFeedback={onFeedback} />
         )}
       </div>
     </div>
