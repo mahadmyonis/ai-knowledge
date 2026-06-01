@@ -11,13 +11,9 @@ interface EmptyStateProps {
 
 const QUICK_ASKS = [
   "How do I book a study room?",
-  "When is the last day to drop a course?",
+  "When is the last day to drop a course this fall?",
   "How do I apply for OSAP?",
-  "What is the course repeat policy?",
-  "How do I register for courses at Carleton?",
   "What does WDN mean on my transcript?",
-  "How do I get exam accommodations through PMC?",
-  "What is the fall 2026 payment deadline?",
 ]
 
 export function EmptyState({ onSuggestionClick, onViewChange }: EmptyStateProps) {
