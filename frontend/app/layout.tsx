@@ -15,6 +15,7 @@ export const viewport = {
 }
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://try-campusq.vercel.app'),
   title: 'CampusQ',
   description: 'CampusQ is an AI-powered academic assistant for Carleton University students. Look up courses, prerequisites, program requirements, and university policies instantly.',
   keywords: ['Carleton University', 'course lookup', 'prerequisites', 'academic assistant', 'degree planner'],
@@ -26,6 +27,12 @@ export const metadata: Metadata = {
     title: 'CampusQ — AI Academic Assistant',
     description: 'Your AI academic assistant, available 24/7. Instant answers from the Carleton academic calendar.',
     type: 'website',
+    siteName: 'CampusQ',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'CampusQ — AI Academic Assistant',
+    description: 'Your AI academic assistant, available 24/7. Instant answers from the Carleton academic calendar.',
   },
 }
 
