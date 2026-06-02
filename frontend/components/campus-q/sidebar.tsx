@@ -12,6 +12,7 @@ import {
   BarChart2,
   Calculator,
   CalendarDays,
+  Map as MapIcon,
   Info,
   Clock,
   Trash2,
@@ -20,7 +21,7 @@ import {
 import { cn } from "@/lib/utils"
 import { useCampus } from "./campus-context"
 
-export type View = "chat" | "programs" | "compare" | "gpa" | "deadlines"
+export type View = "chat" | "programs" | "compare" | "gpa" | "deadlines" | "planner"
 
 export interface ChatSession {
   id: string
@@ -47,6 +48,7 @@ const NAV_ITEMS: { view: View; icon: React.ElementType; label: string }[] = [
   { view: "compare",   icon: BarChart2,     label: "Compare"        },
   { view: "gpa",       icon: Calculator,    label: "GPA Calculator" },
   { view: "deadlines", icon: CalendarDays,  label: "Deadlines"      },
+  { view: "planner",   icon: MapIcon,       label: "Degree Planner" },
 ]
 
 export function Sidebar({

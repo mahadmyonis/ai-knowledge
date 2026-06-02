@@ -1,248 +1,312 @@
 "use client"
 
 import * as React from "react"
-import { Plus, X, GraduationCap, Save, Trash2, RotateCcw } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { Plus, X, RotateCcw, Check, AlertTriangle, Loader2, Sparkles } from "lucide-react"
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
+const STORAGE_KEY = "campusq-degree-plan-v2"
+
+const TERMS = [
+  "Year 1 · Fall", "Year 1 · Winter",
+  "Year 2 · Fall", "Year 2 · Winter",
+  "Year 3 · Fall", "Year 3 · Winter",
+  "Year 4 · Fall", "Year 4 · Winter",
+]
 
 interface PlannedCourse {
   id: string
   code: string
   name: string
   credits: number
+  prerequisites: string[]
 }
 
-type SemesterPlan = PlannedCourse[]
+type Plan = PlannedCourse[][]
 
-const STORAGE_KEY = "campusq-degree-plan"
-const SEMESTERS = 8
+const COURSE_CODE_RE = /\b[A-Z]{2,4}\s?\d{4}\b/g
 
-function getDefaultPlan(): SemesterPlan[] {
-  return Array.from({ length: SEMESTERS }, () => [])
+function emptyPlan(): Plan {
+  return Array.from({ length: TERMS.length }, () => [])
 }
 
-const SEMESTER_LABELS = [
-  "Year 1 — Fall",
-  "Year 1 — Winter",
-  "Year 2 — Fall",
-  "Year 2 — Winter",
-  "Year 3 — Fall",
-  "Year 3 — Winter",
-  "Year 4 — Fall",
-  "Year 4 — Winter",
-]
+// ── Validation engine ────────────────────────────────────────────────────────
+type Status = "ok" | "warning"
+interface Validation { status: Status; missing: string[] }
+
+function validateCourse(course: PlannedCourse, termIdx: number, plan: Plan): Validation {
+  const earlier = new Set<string>()
+  for (let t = 0; t < termIdx; t++) {
+    for (const c of plan[t]) earlier.add(c.code.replace(/\s/g, ""))
+  }
+  const referenced = new Set<string>()
+  for (const p of course.prerequisites) {
+    const matches = (p.toUpperCase().match(COURSE_CODE_RE) || []).map((m) => m.replace(/\s/g, ""))
+    matches.forEach((m) => referenced.add(m))
+  }
+  const missing = [...referenced].filter((code) => !earlier.has(code))
+  return { status: missing.length === 0 ? "ok" : "warning", missing }
+}
 
 export function DegreePlanner() {
-  const [semesters, setSemesters] = React.useState<SemesterPlan[]>(getDefaultPlan)
-  const [dragInfo, setDragInfo] = React.useState<{ courseId: string; fromSem: number } | null>(null)
-  const [dragOverSem, setDragOverSem] = React.useState<number | null>(null)
-  const [addTarget, setAddTarget] = React.useState<number | null>(null)
+  const [plan, setPlan] = React.useState<Plan>(emptyPlan)
+  const [drag, setDrag] = React.useState<{ courseId: string; from: number } | null>(null)
+  const [dragOver, setDragOver] = React.useState<number | null>(null)
+  const [addTo, setAddTo] = React.useState<number | null>(null)
   const [addInput, setAddInput] = React.useState("")
-  const [saved, setSaved] = React.useState(false)
+  const [loadingAdd, setLoadingAdd] = React.useState(false)
+  const [addError, setAddError] = React.useState("")
 
   React.useEffect(() => {
     try {
-      const stored = localStorage.getItem(STORAGE_KEY)
-      if (stored) {
-        const parsed = JSON.parse(stored)
-        if (Array.isArray(parsed) && parsed.length === SEMESTERS) {
-          setSemesters(parsed)
-        }
-      }
+      const raw = localStorage.getItem(STORAGE_KEY)
+      if (raw) setPlan(JSON.parse(raw))
     } catch {}
   }, [])
+  React.useEffect(() => {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(plan)) } catch {}
+  }, [plan])
 
-  const savePlan = (plan: SemesterPlan[]) => {
-    setSemesters(plan)
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(plan))
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2000)
-  }
+  const totalCredits = plan.flat().reduce((s, c) => s + c.credits, 0)
+  const allValidations = plan.map((term, ti) => term.map((c) => validateCourse(c, ti, plan)))
+  const warningCount = allValidations.flat().filter((v) => v.status === "warning").length
 
-  const addCourse = (semIndex: number) => {
-    const raw = addInput.trim().toUpperCase()
-    if (!raw) return
-    const parts = raw.split(" ")
-    const code = parts.slice(0, 2).join(" ")
-    const newCourse: PlannedCourse = {
-      id: `${code}-${Date.now()}`,
-      code,
-      name: parts.slice(2).join(" ") || "",
-      credits: 0.5,
+  const addCourse = async (termIdx: number) => {
+    const code = addInput.trim().toUpperCase().replace(/\s+/, " ")
+    if (!code) return
+    setLoadingAdd(true)
+    setAddError("")
+    try {
+      const res = await fetch(`${API_URL}/api/course/${encodeURIComponent(code.replace(/\s/g, ""))}`)
+      const data = await res.json()
+      if (!data.found) {
+        setAddError(`${code} not found`)
+        setLoadingAdd(false)
+        return
+      }
+      const course: PlannedCourse = {
+        id: Math.random().toString(36).slice(2),
+        code: data.courseCode,
+        name: data.courseName,
+        credits: data.credits ?? 0.5,
+        prerequisites: data.prerequisites ?? [],
+      }
+      setPlan((prev) => prev.map((t, i) => (i === termIdx ? [...t, course] : t)))
+      setAddInput("")
+      setAddTo(null)
+    } catch {
+      setAddError("Couldn't reach the server")
+    } finally {
+      setLoadingAdd(false)
     }
-    const updated = semesters.map((sem, i) => (i === semIndex ? [...sem, newCourse] : sem))
-    savePlan(updated)
-    setAddInput("")
-    setAddTarget(null)
   }
 
-  const removeCourse = (semIndex: number, courseId: string) => {
-    const updated = semesters.map((sem, i) =>
-      i === semIndex ? sem.filter((c) => c.id !== courseId) : sem
-    )
-    savePlan(updated)
+  const removeCourse = (termIdx: number, id: string) => {
+    setPlan((prev) => prev.map((t, i) => (i === termIdx ? t.filter((c) => c.id !== id) : t)))
   }
 
-  const handleDragStart = (e: React.DragEvent, courseId: string, fromSem: number) => {
-    setDragInfo({ courseId, fromSem })
-    e.dataTransfer.effectAllowed = "move"
-  }
-
-  const handleDragOver = (e: React.DragEvent, semIndex: number) => {
-    e.preventDefault()
-    e.dataTransfer.dropEffect = "move"
-    setDragOverSem(semIndex)
-  }
-
-  const handleDrop = (e: React.DragEvent, toSem: number) => {
-    e.preventDefault()
-    if (!dragInfo || dragInfo.fromSem === toSem) {
-      setDragInfo(null)
-      setDragOverSem(null)
-      return
-    }
-    const { courseId, fromSem } = dragInfo
-    const course = semesters[fromSem].find((c) => c.id === courseId)
-    if (!course) return
-    const updated = semesters.map((sem, i) => {
-      if (i === fromSem) return sem.filter((c) => c.id !== courseId)
-      if (i === toSem) return [...sem, course]
-      return sem
+  const handleDrop = (toTerm: number) => {
+    if (!drag) return
+    setPlan((prev) => {
+      const next = prev.map((t) => [...t])
+      const moving = next[drag.from].find((c) => c.id === drag.courseId)
+      if (!moving) return prev
+      next[drag.from] = next[drag.from].filter((c) => c.id !== drag.courseId)
+      next[toTerm] = [...next[toTerm], moving]
+      return next
     })
-    savePlan(updated)
-    setDragInfo(null)
-    setDragOverSem(null)
-  }
-
-  const totalCredits = semesters.flat().reduce((sum, c) => sum + c.credits, 0)
-  const resetPlan = () => {
-    const empty = getDefaultPlan()
-    setSemesters(empty)
-    localStorage.removeItem(STORAGE_KEY)
+    setDrag(null)
+    setDragOver(null)
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <h2 className="text-xl font-bold mb-1">Degree Planner</h2>
-          <p className="text-sm text-muted-foreground">
-            Drag and drop courses to build your semester plan. Saves automatically.
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="text-sm text-muted-foreground">
-            <span className="font-semibold text-foreground">{totalCredits.toFixed(1)}</span> credits planned
-          </div>
-          {saved && (
-            <span className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
-              <Save className="size-3" /> Saved
-            </span>
-          )}
-          <Button variant="ghost" size="sm" onClick={resetPlan} className="gap-1.5 text-muted-foreground hover:text-red-500">
-            <RotateCcw className="size-3.5" />
-            Reset
-          </Button>
-        </div>
-      </div>
+    <div className="relative -mx-4 md:-mx-6 -my-8 px-4 md:px-6 py-8 min-h-full overflow-hidden">
+      {/* Futuristic backdrop */}
+      <div className="pointer-events-none absolute inset-0 -z-10 bg-[#0a0a0f]" />
+      <div className="pointer-events-none absolute inset-0 -z-10 opacity-[0.07]"
+        style={{ backgroundImage: "linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)", backgroundSize: "44px 44px" }} />
+      <div className="pointer-events-none absolute -top-40 left-1/4 -z-10 size-[500px] rounded-full bg-red-600/20 blur-[120px]" />
+      <div className="pointer-events-none absolute -bottom-40 right-1/4 -z-10 size-[400px] rounded-full bg-indigo-600/10 blur-[120px]" />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {semesters.map((sem, semIndex) => {
-          const semCredits = sem.reduce((sum, c) => sum + c.credits, 0)
-          const isOver = dragOverSem === semIndex
-          return (
-            <div
-              key={semIndex}
-              className={`rounded-xl border-2 transition-colors ${
-                isOver
-                  ? "border-primary bg-primary/5"
-                  : "border-border bg-card/50"
-              }`}
-              onDragOver={(e) => handleDragOver(e, semIndex)}
-              onDragLeave={() => setDragOverSem(null)}
-              onDrop={(e) => handleDrop(e, semIndex)}
-            >
-              <div className="flex items-center justify-between px-4 py-3 border-b border-border/60">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    {SEMESTER_LABELS[semIndex]}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    {sem.length} courses · {semCredits.toFixed(1)} cr
-                  </p>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="size-7 text-muted-foreground hover:text-foreground"
-                  onClick={() => setAddTarget(addTarget === semIndex ? null : semIndex)}
-                >
-                  <Plus className="size-4" />
-                </Button>
-              </div>
-
-              <div className="p-3 space-y-2 min-h-[80px]">
-                {sem.map((course) => (
-                  <div
-                    key={course.id}
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, course.id, semIndex)}
-                    className="flex items-center justify-between gap-2 px-3 py-2 bg-background rounded-lg border border-border cursor-grab active:cursor-grabbing hover:border-primary/40 transition-colors group"
-                  >
-                    <div className="min-w-0">
-                      <span className="font-mono text-sm font-semibold text-foreground">{course.code}</span>
-                      {course.name && (
-                        <span className="ml-2 text-xs text-muted-foreground truncate">{course.name}</span>
-                      )}
-                    </div>
-                    <button
-                      onClick={() => removeCourse(semIndex, course.id)}
-                      className="text-muted-foreground hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
-                    >
-                      <X className="size-3.5" />
-                    </button>
-                  </div>
-                ))}
-
-                {sem.length === 0 && !isOver && (
-                  <p className="text-xs text-muted-foreground text-center py-4">Drop courses here</p>
-                )}
-
-                {addTarget === semIndex && (
-                  <div className="flex gap-2 mt-2">
-                    <input
-                      autoFocus
-                      type="text"
-                      value={addInput}
-                      onChange={(e) => setAddInput(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") addCourse(semIndex)
-                        if (e.key === "Escape") { setAddTarget(null); setAddInput("") }
-                      }}
-                      placeholder="SYSC 3110"
-                      className="flex-1 px-2.5 py-1.5 text-sm rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary/30 font-mono"
-                    />
-                    <Button size="sm" onClick={() => addCourse(semIndex)} className="px-3">
-                      Add
-                    </Button>
-                  </div>
-                )}
-              </div>
+      <div className="relative text-white">
+        {/* Header */}
+        <div className="flex items-start justify-between gap-4 mb-6">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <Sparkles className="size-4 text-red-400" />
+              <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-red-400/80">Degree Planner</span>
             </div>
-          )
-        })}
-      </div>
+            <h2 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent">
+              Build your path
+            </h2>
+            <p className="text-sm text-white/40 mt-1 max-w-md">
+              Drag courses across terms. CampusQ checks your prerequisites live.
+            </p>
+          </div>
 
-      <div className="rounded-xl border border-border bg-secondary/20 p-4">
-        <div className="flex items-center gap-2 mb-2 text-sm font-semibold">
-          <GraduationCap className="size-4 text-primary" />
-          Tips
+          <div className="flex items-center gap-4 shrink-0">
+            <CreditRing total={totalCredits} target={20} />
+            <button
+              onClick={() => { if (confirm("Clear your entire plan?")) setPlan(emptyPlan()) }}
+              className="flex items-center gap-1.5 text-xs text-white/40 hover:text-white/80 transition-colors"
+            >
+              <RotateCcw className="size-3.5" /> Reset
+            </button>
+          </div>
         </div>
-        <ul className="text-xs text-muted-foreground space-y-1">
-          <li>• Drag courses between semesters to rearrange your plan</li>
-          <li>• Click + to add a course — type the code (e.g. SYSC 3110) and press Enter</li>
-          <li>• Your plan saves automatically to your browser</li>
-          <li>• Most Carleton courses are 0.5 credit units — you typically need 20 total to graduate</li>
-        </ul>
+
+        {/* Status bar */}
+        <div className={`flex items-center gap-2 rounded-xl border px-4 py-2.5 mb-6 text-sm backdrop-blur-sm transition-colors ${
+          warningCount === 0
+            ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+            : "border-amber-500/30 bg-amber-500/10 text-amber-300"
+        }`}>
+          {warningCount === 0 ? (
+            <><Check className="size-4" /> All prerequisites satisfied in order</>
+          ) : (
+            <><AlertTriangle className="size-4" /> {warningCount} course{warningCount > 1 ? "s" : ""} with prerequisite issues — hover for details</>
+          )}
+        </div>
+
+        {/* Term columns */}
+        <div className="flex gap-3 overflow-x-auto pb-4 snap-x">
+          {TERMS.map((label, ti) => {
+            const termCredits = plan[ti].reduce((s, c) => s + c.credits, 0)
+            const isOver = dragOver === ti
+            return (
+              <div
+                key={ti}
+                onDragOver={(e) => { e.preventDefault(); setDragOver(ti) }}
+                onDragLeave={() => setDragOver((c) => (c === ti ? null : c))}
+                onDrop={() => handleDrop(ti)}
+                className={`snap-start shrink-0 w-[230px] rounded-2xl border backdrop-blur-md transition-all duration-200 ${
+                  isOver
+                    ? "border-red-400/60 bg-red-500/10 scale-[1.02] shadow-[0_0_30px_rgba(220,38,38,0.25)]"
+                    : "border-white/10 bg-white/[0.03]"
+                }`}
+              >
+                <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+                  <span className="text-xs font-semibold text-white/70 tracking-wide">{label}</span>
+                  <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded-md ${
+                    termCredits > 2.5 ? "bg-amber-500/20 text-amber-300" : "bg-white/10 text-white/50"
+                  }`}>
+                    {termCredits.toFixed(1)}
+                  </span>
+                </div>
+
+                <div className="p-2.5 space-y-2 min-h-[80px]">
+                  {plan[ti].map((course, idx) => {
+                    const v = allValidations[ti][idx]
+                    return (
+                      <div
+                        key={course.id}
+                        draggable
+                        onDragStart={() => setDrag({ courseId: course.id, from: ti })}
+                        onDragEnd={() => { setDrag(null); setDragOver(null) }}
+                        className={`group relative rounded-xl border px-3 py-2.5 cursor-grab active:cursor-grabbing transition-all ${
+                          v.status === "ok"
+                            ? "border-white/10 bg-white/[0.04] hover:bg-white/[0.07]"
+                            : "border-amber-500/40 bg-amber-500/[0.07] hover:bg-amber-500/10"
+                        }`}
+                        title={v.status === "warning" ? `Needs first: ${v.missing.join(", ")}` : undefined}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-sm font-bold font-mono text-white">{course.code}</span>
+                              {v.status === "ok"
+                                ? <Check className="size-3 text-emerald-400 shrink-0" />
+                                : <AlertTriangle className="size-3 text-amber-400 shrink-0" />}
+                            </div>
+                            <p className="text-[11px] text-white/40 truncate mt-0.5">{course.name}</p>
+                          </div>
+                          <button
+                            onClick={() => removeCourse(ti, course.id)}
+                            className="opacity-0 group-hover:opacity-100 text-white/30 hover:text-red-400 transition-all shrink-0"
+                          >
+                            <X className="size-3.5" />
+                          </button>
+                        </div>
+                        {v.status === "warning" && (
+                          <p className="text-[10px] text-amber-400/80 mt-1.5 leading-tight">
+                            Needs first: {v.missing.join(", ")}
+                          </p>
+                        )}
+                        <span className="absolute top-2 right-7 text-[9px] font-mono text-white/25">{course.credits}</span>
+                      </div>
+                    )
+                  })}
+
+                  {addTo === ti ? (
+                    <div className="rounded-xl border border-red-400/40 bg-white/[0.04] p-2">
+                      <input
+                        autoFocus
+                        value={addInput}
+                        onChange={(e) => setAddInput(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === "Enter") addCourse(ti); if (e.key === "Escape") { setAddTo(null); setAddInput(""); setAddError("") } }}
+                        placeholder="e.g. COMP 2402"
+                        className="w-full bg-transparent text-sm text-white font-mono outline-none placeholder:text-white/25"
+                      />
+                      {addError && <p className="text-[10px] text-red-400 mt-1">{addError}</p>}
+                      <div className="flex gap-1.5 mt-2">
+                        <button
+                          onClick={() => addCourse(ti)}
+                          disabled={loadingAdd}
+                          className="flex-1 flex items-center justify-center gap-1 bg-red-600 hover:bg-red-500 text-white text-[11px] font-medium py-1.5 rounded-lg transition-colors disabled:opacity-50"
+                        >
+                          {loadingAdd ? <Loader2 className="size-3 animate-spin" /> : "Add"}
+                        </button>
+                        <button
+                          onClick={() => { setAddTo(null); setAddInput(""); setAddError("") }}
+                          className="px-2 text-white/40 hover:text-white/80 text-[11px]"
+                        >Cancel</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => { setAddTo(ti); setAddInput(""); setAddError("") }}
+                      className="w-full flex items-center justify-center gap-1.5 rounded-xl border border-dashed border-white/15 hover:border-red-400/50 hover:bg-white/[0.03] text-white/40 hover:text-white/70 text-xs py-2.5 transition-all"
+                    >
+                      <Plus className="size-3.5" /> Add course
+                    </button>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+
+        <p className="text-[11px] text-white/25 mt-6 max-w-xl">
+          Suggested planning tool based on the current Carleton calendar. Prerequisite checks are a guide —
+          compound rules and program-specific exceptions apply. Always confirm with your advisor or official program tree.
+        </p>
+      </div>
+    </div>
+  )
+}
+
+function CreditRing({ total, target }: { total: number; target: number }) {
+  const pct = Math.min(total / target, 1)
+  const r = 26
+  const circ = 2 * Math.PI * r
+  return (
+    <div className="relative size-16">
+      <svg className="size-16 -rotate-90" viewBox="0 0 64 64">
+        <circle cx="32" cy="32" r={r} fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="5" />
+        <circle
+          cx="32" cy="32" r={r} fill="none" stroke="url(#grad)" strokeWidth="5" strokeLinecap="round"
+          strokeDasharray={circ} strokeDashoffset={circ * (1 - pct)}
+          style={{ transition: "stroke-dashoffset 0.5s ease" }}
+        />
+        <defs>
+          <linearGradient id="grad" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#f87171" />
+            <stop offset="100%" stopColor="#dc2626" />
+          </linearGradient>
+        </defs>
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className="text-sm font-bold text-white leading-none">{total.toFixed(1)}</span>
+        <span className="text-[8px] text-white/40">/ {target}</span>
       </div>
     </div>
   )
