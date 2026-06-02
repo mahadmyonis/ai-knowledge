@@ -352,12 +352,13 @@ async def course_lookup(course_code: str):
         return {"found": False, "error": str(e)}
 
 
-@app.post("/api/feedback")
-async def submit_feedback(
+@app.post("/api/report")
+async def submit_report(
     message: str = Form(...),
     query: str = Form(""),
 ):
-    _log("feedback.log", {
+    """Problem reports from the 'Report a Problem' modal (separate from thumbs feedback)."""
+    _log("reports.log", {
         "ts": datetime.utcnow().isoformat(),
         "id": str(uuid.uuid4())[:8],
         "query": query[:300],

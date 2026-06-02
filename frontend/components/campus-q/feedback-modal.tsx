@@ -39,7 +39,7 @@ export function FeedbackModal({ open, onClose, lastQuery = "" }: FeedbackModalPr
       const formData = new FormData()
       formData.append("message", message)
       formData.append("query", query)
-      await fetch(`${API_URL}/api/feedback`, { method: "POST", body: formData })
+      await fetch(`${API_URL}/api/report`, { method: "POST", body: formData })
       setSubmitted(true)
     } catch {
       setSubmitted(true)
