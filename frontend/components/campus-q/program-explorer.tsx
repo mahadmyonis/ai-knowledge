@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Loader2, BookOpen, ArrowLeft, Search, ChevronRight, Layers, X } from "lucide-react"
+import { Loader2, BookOpen, ArrowLeft, Search, ChevronRight, ChevronDown, Layers, X, GraduationCap } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import ReactMarkdown from "react-markdown"
 import { cn } from "@/lib/utils"
@@ -373,40 +373,146 @@ function totalCredits(variant: string): string | null {
   return m ? m[1] : null
 }
 
-// Clean, instant render of structured requirement groups (no AI).
-function StructuredRequirements({ groups, variant }: { groups: ReqGroup[]; variant: string }) {
-  const total = totalCredits(variant)
+// Turn a raw calendar area header into a friendly section title + color band.
+function friendlySection(instruction: string): { title: string; tone: string } {
+  const t = instruction.toLowerCase()
+  if (/free elective/.test(t)) return { title: "Free Electives", tone: "bg-amber-500" }
+  if (/not (included )?in the major|not in communication|in electives not/.test(t)) return { title: "Electives", tone: "bg-blue-500" }
+  if (/major cgpa|included in the major|core/.test(t)) return { title: "Major Requirements", tone: "bg-red-500" }
+  if (/additional requirement/.test(t)) return { title: "Additional Requirements", tone: "bg-zinc-400" }
+  // strip a leading "A. " / "1. " and a trailing credit note
+  const cleaned = instruction.replace(/^[A-Z0-9]+\.\s*/, "").replace(/\s*\(\d.*$/, "").trim()
+  return { title: cleaned || "Requirements", tone: "bg-zinc-400" }
+}
+
+interface Section { title: string; tone: string; credits: number | null; items: ReqGroup[]; courses: ReqCourse[] }
+
+// Group the flat list into A./B./C. sections, nesting numbered sub-requirements.
+function buildSections(groups: ReqGroup[]): Section[] {
+  const isArea = (g: ReqGroup) => /^[A-Z]\.\s/.test(g.instruction)
+  const sections: Section[] = []
+  let current: Section | null = null
+  for (const g of groups) {
+    if (isArea(g)) {
+      const f = friendlySection(g.instruction)
+      current = { title: f.title, tone: f.tone, credits: g.credits, items: [], courses: g.courses }
+      sections.push(current)
+    } else {
+      if (!current) {
+        current = { title: "Requirements", tone: "bg-red-500", credits: null, items: [], courses: [] }
+        sections.push(current)
+      }
+      current.items.push(g)
+    }
+  }
+  return sections
+}
+
+function CourseChip({ c }: { c: ReqCourse }) {
+  return (
+    <span
+      title={c.title || undefined}
+      className="inline-flex items-center text-[11px] font-mono font-medium px-2 py-1 rounded-md bg-secondary/70 text-foreground/80 hover:bg-secondary transition-colors"
+    >
+      {c.code}
+    </span>
+  )
+}
+
+function RequirementSection({ section, defaultOpen }: { section: Section; defaultOpen: boolean }) {
+  const [open, setOpen] = React.useState(defaultOpen)
   return (
     <div className="rounded-xl border border-border bg-card overflow-hidden">
-      <div className="flex items-center justify-between px-5 py-3.5 border-b border-border/50 bg-secondary/20">
-        <div className="flex items-center gap-2 text-sm font-medium">
-          <BookOpen className="size-4 text-primary" />
-          Course Requirements
+      <button onClick={() => setOpen(!open)} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-secondary/30 transition-colors text-left">
+        <span className={cn("w-1 h-8 rounded-full shrink-0", section.tone)} />
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-foreground">{section.title}</p>
         </div>
-        {total && <span className="text-xs font-mono px-2 py-0.5 rounded-md bg-secondary text-muted-foreground">{total} credits</span>}
-      </div>
-      <div className="divide-y divide-border/40">
-        {groups.map((g, i) => (
-          <div key={i} className="px-5 py-4">
-            <div className="flex items-start justify-between gap-3 mb-2">
-              <p className="text-sm font-medium text-foreground leading-snug">{g.instruction || "Required courses"}</p>
-              {g.credits != null && (
-                <span className="shrink-0 text-[11px] font-mono px-1.5 py-0.5 rounded-md bg-primary/10 text-primary">{g.credits} cr</span>
+        {section.credits != null && (
+          <span className="text-xs font-mono px-2 py-0.5 rounded-md bg-secondary text-muted-foreground shrink-0">{section.credits} cr</span>
+        )}
+        <ChevronDown className={cn("size-4 text-muted-foreground/40 transition-transform shrink-0", open && "rotate-180")} />
+      </button>
+
+      {open && (
+        <div className="px-4 pb-4 pt-1 space-y-3 border-t border-border/40">
+          {/* direct courses on the area header (rare) */}
+          {section.courses.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 pt-3">
+              {section.courses.map((c, j) => <CourseChip key={j} c={c} />)}
+            </div>
+          )}
+          {/* numbered sub-requirements */}
+          {section.items.map((g, i) => (
+            <div key={i} className="pt-3">
+              <div className="flex items-start justify-between gap-3 mb-2">
+                <p className="text-xs text-muted-foreground leading-snug">
+                  {g.instruction.replace(/^\d+\.\s*/, "")}
+                </p>
+                {g.credits != null && (
+                  <span className="shrink-0 text-[10px] font-mono px-1.5 py-0.5 rounded bg-primary/10 text-primary">{g.credits} cr</span>
+                )}
+              </div>
+              {g.courses.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {g.courses.map((c, j) => <CourseChip key={j} c={c} />)}
+                </div>
               )}
             </div>
-            {g.courses.length > 0 && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 mt-2">
-                {g.courses.map((c, j) => (
-                  <div key={j} className="flex items-baseline gap-2 text-sm py-0.5">
-                    <span className="font-mono font-semibold text-foreground shrink-0">{c.code}</span>
-                    {c.title && <span className="text-muted-foreground/80 text-xs truncate">{c.title}</span>}
-                  </div>
-                ))}
-              </div>
-            )}
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Redesigned structured requirements view
+function StructuredRequirements({ groups, variant }: { groups: ReqGroup[]; variant: string }) {
+  const total = totalCredits(variant)
+  const sections = buildSections(groups)
+  // credit-breakdown bar from sections that declare credits
+  const segs = sections.filter((s) => s.credits != null) as (Section & { credits: number })[]
+  const segTotal = segs.reduce((sum, s) => sum + s.credits, 0)
+
+  return (
+    <div className="flex flex-col gap-3">
+      {/* Header band with total credits + breakdown bar */}
+      <div className="rounded-2xl border border-border bg-card p-5">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2.5">
+            <GraduationCap className="size-5 text-primary" />
+            <span className="text-sm font-medium text-foreground">Degree Requirements</span>
           </div>
-        ))}
+          {total && (
+            <div className="flex flex-col items-end">
+              <span className="text-2xl font-bold text-foreground leading-none tabular-nums">{total}</span>
+              <span className="text-[10px] uppercase tracking-wider text-muted-foreground/60">total credits</span>
+            </div>
+          )}
+        </div>
+
+        {segs.length > 1 && segTotal > 0 && (
+          <div className="mt-4">
+            <div className="flex h-2.5 rounded-full overflow-hidden bg-secondary">
+              {segs.map((s, i) => (
+                <div key={i} className={cn("h-full", s.tone)} style={{ width: `${(s.credits / segTotal) * 100}%` }} title={`${s.title}: ${s.credits} cr`} />
+              ))}
+            </div>
+            <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2.5">
+              {segs.map((s, i) => (
+                <span key={i} className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                  <span className={cn("size-2 rounded-full", s.tone)} /> {s.title} · {s.credits} cr
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* Sections */}
+      {sections.map((s, i) => (
+        <RequirementSection key={i} section={s} defaultOpen={i === 0 || sections.length <= 3} />
+      ))}
     </div>
   )
 }
