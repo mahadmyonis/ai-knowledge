@@ -337,6 +337,32 @@ async def get_documents():
         return {"count": 0}
 
 
+# ── Structured program requirements (for the interactive tracker) ─────────────
+_PROGRAM_REQS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "program_requirements.json")
+_PROGRAM_REQS_CACHE: dict | None = None
+
+def _load_program_reqs() -> dict:
+    global _PROGRAM_REQS_CACHE
+    if _PROGRAM_REQS_CACHE is None:
+        try:
+            with open(_PROGRAM_REQS_PATH, "r", encoding="utf-8") as f:
+                _PROGRAM_REQS_CACHE = json.load(f)
+        except Exception:
+            _PROGRAM_REQS_CACHE = {}
+    return _PROGRAM_REQS_CACHE
+
+@app.get("/api/program-requirements")
+async def program_requirements(slug: str = ""):
+    """Structured requirements. No slug -> list of available programs; slug -> that program's variants."""
+    data = _load_program_reqs()
+    if not slug:
+        return {"programs": [{"slug": k, "variants": list(v["variants"].keys())} for k, v in data.items()]}
+    prog = data.get(slug)
+    if not prog:
+        return {"found": False}
+    return {"found": True, "slug": slug, **prog}
+
+
 @app.get("/api/course/{course_code}")
 async def course_lookup(course_code: str):
     clean_code = course_code.upper().strip()
