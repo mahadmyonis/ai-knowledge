@@ -3,7 +3,7 @@
 import * as React from "react"
 import { track } from "@vercel/analytics"
 import { cn } from "@/lib/utils"
-import { MessageSquare as MessageSquareIcon, BookOpen as BookOpenIcon, BarChart2 as BarChart2Icon, Calculator as CalculatorIcon, CalendarDays as CalendarDaysIcon, GraduationCap as GraduationCapIcon } from "lucide-react"
+import { MessageSquare as MessageSquareIcon, BookOpen as BookOpenIcon, BarChart2 as BarChart2Icon, Calculator as CalculatorIcon, CalendarDays as CalendarDaysIcon } from "lucide-react"
 import { Header } from "./header"
 import { Sidebar, type View, type ChatSession } from "./sidebar"
 import { ChatMessage } from "./chat-message"
@@ -16,7 +16,6 @@ import { CourseCompare } from "./course-compare"
 import { ProgramExplorer } from "./program-explorer"
 import { GpaCalculator } from "./gpa-calculator"
 import { DeadlineTracker } from "./deadline-tracker"
-import { RequirementTracker } from "./requirement-tracker"
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 const SESSIONS_KEY = "campusq-sessions"
@@ -288,7 +287,6 @@ export function ChatContainer() {
     if (currentView === "compare")   return <CourseCompare />
     if (currentView === "gpa")       return <GpaCalculator />
     if (currentView === "deadlines") return <DeadlineTracker />
-    if (currentView === "tracker")   return <RequirementTracker />
     return null
   }
 
@@ -437,9 +435,9 @@ export function ChatContainer() {
         <nav className="md:hidden flex items-center justify-around border-t border-border/40 bg-card safe-area-pb px-2">
           {[
             { view: "programs"  as View, label: "Programs",  Icon: BookOpenIcon       },
-            { view: "tracker"   as View, label: "Degree",    Icon: GraduationCapIcon  },
-            { view: "chat"      as View, label: "Chat",      Icon: MessageSquareIcon  },
             { view: "gpa"       as View, label: "GPA",       Icon: CalculatorIcon     },
+            { view: "chat"      as View, label: "Chat",      Icon: MessageSquareIcon  },
+            { view: "compare"   as View, label: "Compare",   Icon: BarChart2Icon      },
             { view: "deadlines" as View, label: "Dates",     Icon: CalendarDaysIcon   },
           ].map(({ view, label, Icon }) => {
             const active = currentView === view
