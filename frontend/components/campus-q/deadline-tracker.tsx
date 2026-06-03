@@ -367,7 +367,7 @@ export function DeadlineTracker({ onAsk }: { onAsk?: (question: string) => void 
           className={cn("shrink-0 inline-flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-lg text-white transition-opacity hover:opacity-90", theme.bgClass)}
           title="Download all upcoming deadlines as a calendar file"
         >
-          <CalendarPlus className="size-3.5" /> Add all to calendar
+          <CalendarPlus className="size-3.5" /> Add all<span className="hidden sm:inline"> to calendar</span>
         </button>
       </div>
 
@@ -396,9 +396,10 @@ export function DeadlineTracker({ onAsk }: { onAsk?: (question: string) => void 
           <a
             href={googleCalUrl(nextCritical.title, nextCritical.date)}
             target="_blank" rel="noopener noreferrer"
-            className="shrink-0 inline-flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-lg border border-border hover:bg-secondary transition-colors"
+            title="Add to calendar"
+            className="shrink-0 inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-2 rounded-lg border border-border hover:bg-secondary transition-colors"
           >
-            <CalendarPlus className="size-3.5" /> Remind me
+            <CalendarPlus className="size-3.5" /> <span className="hidden sm:inline">Remind me</span>
           </a>
         </div>
       )}
@@ -407,7 +408,7 @@ export function DeadlineTracker({ onAsk }: { onAsk?: (question: string) => void 
       {heroDeadlines.length > 0 && (
         <div className="flex flex-col gap-2">
           <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50">Coming up</p>
-          <div className="flex gap-2 flex-wrap sm:flex-nowrap">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             {heroDeadlines.map((d) => <HeroCard key={d.id} deadline={d} onClick={() => setModalId(d.id)} />)}
           </div>
         </div>
@@ -484,7 +485,7 @@ export function DeadlineTracker({ onAsk }: { onAsk?: (question: string) => void 
                       >
                         <UrgencyDot days={d.days} />
                         <div className="flex-1 min-w-0">
-                          <p className={cn("text-sm font-medium truncate", d.days < 0 ? "text-muted-foreground" : "text-foreground")}>
+                          <p className={cn("text-sm font-medium leading-snug", d.days < 0 ? "text-muted-foreground" : "text-foreground")}>
                             {d.title}
                           </p>
                           <p className="text-xs text-muted-foreground/60 mt-0.5">{formatDate(d.date)}</p>
