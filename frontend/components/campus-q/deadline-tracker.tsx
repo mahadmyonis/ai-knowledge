@@ -118,6 +118,8 @@ function icsDate(dateStr: string): string {
 }
 
 function buildICS(events: { id: string; title: string; date: string }[]): string {
+  // DTSTAMP — required by RFC 5545; UTC form YYYYMMDDTHHMMSSZ
+  const stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "")
   const lines = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
@@ -133,6 +135,7 @@ function buildICS(events: { id: string; title: string; date: string }[]): string
     lines.push(
       "BEGIN:VEVENT",
       `UID:campusq-${e.id}@try-campusq`,
+      `DTSTAMP:${stamp}`,
       `DTSTART;VALUE=DATE:${start}`,
       `DTEND;VALUE=DATE:${end}`,
       `SUMMARY:${e.title}`,
