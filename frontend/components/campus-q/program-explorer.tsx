@@ -365,7 +365,22 @@ function matchVariant(queryName: string, index: ProgIndexEntry[]): { slug: strin
   if (exact) return exact
   if (startsWith) return { slug: startsWith.slug, variant: startsWith.variant }
   if (includes) return { slug: includes.slug, variant: includes.variant }
-  return null
+
+  // Fallback: token-overlap (handles inserted words like "Bachelor of Engineering")
+  const qTokens = nq.split(" ").filter((t) => t.length > 1)
+  let best: { slug: string; variant: string; score: number; len: number } | null = null
+  for (const entry of index) {
+    for (const variant of entry.variants) {
+      const vTokens = new Set(normalize(variant).split(" "))
+      const found = qTokens.filter((t) => vTokens.has(t)).length
+      const score = qTokens.length ? found / qTokens.length : 0
+      const len = normalize(variant).length
+      if (score >= 0.8 && (!best || score > best.score || (score === best.score && len < best.len))) {
+        best = { slug: entry.slug, variant, score, len }
+      }
+    }
+  }
+  return best ? { slug: best.slug, variant: best.variant } : null
 }
 
 function totalCredits(variant: string): string | null {
