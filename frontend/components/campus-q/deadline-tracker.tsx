@@ -85,6 +85,31 @@ const CATEGORY_CONFIG: Record<Category, { label: string; color: string; bg: stri
 
 const TERM_ORDER: Term[] = ["Summer 2026", "Fall 2026", "Winter 2027"]
 
+// Plain-language "what happens if you miss this" — hand-written, grounded in
+// Carleton's real rules. A wrong consequence is worse than none, so these are
+// intentionally not AI-generated.
+const CONSEQUENCE: Record<Category, string> = {
+  registration:
+    "After this date you can't add the course through Carleton Central on your own. You'd need a Registration Override Request approved by the department — not guaranteed, and you may have already missed coursework.",
+  withdrawal:
+    "Miss the full-refund date and you stay enrolled owing tuition. After the later academic-withdrawal deadline, you can no longer withdraw — you'll receive whatever final grade you earn, and a WDN notation only applies if you withdrew in time.",
+  payment:
+    "Late payment triggers interest charges and a financial hold on your account — which blocks registration, transcripts, and adding more courses until it's cleared.",
+  exams:
+    "Exams run on a fixed schedule. If you can't write due to illness or an emergency, you must apply for a deferral through the Registrar's Office within about 3 business days with documentation — you can't simply reschedule.",
+  classes:
+    "This marks the start or end of the teaching term. Good to know for planning, but no direct penalty attached.",
+  holiday:
+    "The University is closed — no classes or exams. Plan around it, but nothing to action.",
+}
+
+const ASK_PROMPT: Partial<Record<Category, string>> = {
+  registration: "What happens if I miss the last day to add a course?",
+  withdrawal: "What's the difference between dropping and withdrawing from a course at Carleton?",
+  payment: "What happens if I pay my tuition late at Carleton?",
+  exams: "How do I defer an exam at Carleton?",
+}
+
 function parseDate(dateStr: string): Date {
   const [y, m, d] = dateStr.split("-").map(Number)
   return new Date(y, m - 1, d)
@@ -222,7 +247,7 @@ function HeroCard({ deadline }: { deadline: Deadline & { days: number } }) {
   )
 }
 
-export function DeadlineTracker() {
+export function DeadlineTracker({ onAsk }: { onAsk?: (question: string) => void }) {
   const { theme } = useCampus()
   const withDays = DEADLINES.map((d) => ({ ...d, days: daysUntil(d.date) }))
 
@@ -230,6 +255,7 @@ export function DeadlineTracker() {
   const [activeFilter, setActiveFilter] = React.useState<"All" | Term>(() => defaultTerm(withDays))
   const [showPast, setShowPast] = React.useState(false)
   const [activeCat, setActiveCat] = React.useState<Category | "All">("All")
+  const [expandedId, setExpandedId] = React.useState<string | null>(null)
 
   // The single most urgent CRITICAL deadline — the big countdown
   const nextCritical = withDays
@@ -378,45 +404,61 @@ export function DeadlineTracker() {
               <div className="rounded-xl border border-border overflow-hidden">
                 {items.map((d, i) => {
                   const cat = CATEGORY_CONFIG[d.category]
+                  const open = expandedId === d.id
                   return (
-                    <div
-                      key={d.id}
-                      className={cn(
-                        "flex items-center gap-3 px-4 py-3 transition-colors",
-                        i < items.length - 1 && "border-b border-border/40",
-                        d.days < 0 ? "opacity-40" : "hover:bg-secondary/30",
-                        d.days >= 0 && d.days <= 7 && "bg-red-500/5"
-                      )}
-                    >
-                      <UrgencyDot days={d.days} />
-
-                      <div className="flex-1 min-w-0">
-                        <p className={cn(
-                          "text-sm font-medium truncate",
-                          d.days < 0 ? "text-muted-foreground" : "text-foreground"
-                        )}>
-                          {d.title}
-                        </p>
-                        <p className="text-xs text-muted-foreground/60 mt-0.5">{formatDate(d.date)}</p>
-                      </div>
-
-                      <div className="flex items-center gap-2 shrink-0">
-                        <span className={cn("text-[10px] font-medium px-1.5 py-0.5 rounded-md hidden sm:inline", cat.bg, cat.color)}>
-                          {cat.label}
-                        </span>
-                        <UrgencyBadge days={d.days} />
-                        {d.days >= 0 && (
-                          <a
-                            href={googleCalUrl(d.title, d.date)}
-                            target="_blank" rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            title="Add to calendar"
-                            className="p-1 rounded-md text-muted-foreground/40 hover:text-foreground hover:bg-secondary transition-colors"
-                          >
-                            <CalendarPlus className="size-3.5" />
-                          </a>
+                    <div key={d.id} className={cn(i < items.length - 1 && "border-b border-border/40")}>
+                      {/* Row (clickable) */}
+                      <button
+                        onClick={() => setExpandedId(open ? null : d.id)}
+                        className={cn(
+                          "w-full flex items-center gap-3 px-4 py-3 transition-colors text-left",
+                          d.days < 0 ? "opacity-40" : "hover:bg-secondary/30",
+                          d.days >= 0 && d.days <= 7 && !open && "bg-red-500/5"
                         )}
-                      </div>
+                      >
+                        <UrgencyDot days={d.days} />
+                        <div className="flex-1 min-w-0">
+                          <p className={cn("text-sm font-medium truncate", d.days < 0 ? "text-muted-foreground" : "text-foreground")}>
+                            {d.title}
+                          </p>
+                          <p className="text-xs text-muted-foreground/60 mt-0.5">{formatDate(d.date)}</p>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className={cn("text-[10px] font-medium px-1.5 py-0.5 rounded-md hidden sm:inline", cat.bg, cat.color)}>
+                            {cat.label}
+                          </span>
+                          <UrgencyBadge days={d.days} />
+                          <ChevronDown className={cn("size-3.5 text-muted-foreground/40 transition-transform", open && "rotate-180")} />
+                        </div>
+                      </button>
+
+                      {/* Expanded detail */}
+                      {open && (
+                        <div className="px-4 pb-4 pt-1 bg-secondary/20">
+                          <div className="flex items-start gap-2 mb-3">
+                            <AlertTriangle className={cn("size-3.5 mt-0.5 shrink-0",
+                              CRITICAL_CATEGORIES.includes(d.category) ? "text-amber-500" : "text-muted-foreground/40")} />
+                            <p className="text-xs text-muted-foreground leading-relaxed">{CONSEQUENCE[d.category]}</p>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            <a
+                              href={googleCalUrl(d.title, d.date)}
+                              target="_blank" rel="noopener noreferrer"
+                              className={cn("inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-lg text-white hover:opacity-90 transition-opacity", theme.bgClass)}
+                            >
+                              <CalendarPlus className="size-3" /> Add to calendar
+                            </a>
+                            {onAsk && ASK_PROMPT[d.category] && (
+                              <button
+                                onClick={() => onAsk(ASK_PROMPT[d.category]!)}
+                                className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-lg border border-border text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+                              >
+                                Ask CampusQ about this →
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )
                 })}

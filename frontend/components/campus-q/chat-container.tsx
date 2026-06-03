@@ -286,7 +286,7 @@ export function ChatContainer() {
     if (currentView === "programs")  return <ProgramExplorer />
     if (currentView === "compare")   return <CourseCompare />
     if (currentView === "gpa")       return <GpaCalculator />
-    if (currentView === "deadlines") return <DeadlineTracker />
+    if (currentView === "deadlines") return <DeadlineTracker onAsk={(q) => { setCurrentView("chat"); handleSubmit(q) }} />
     return null
   }
 
