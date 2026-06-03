@@ -3,7 +3,7 @@
 import * as React from "react"
 import { cn } from "@/lib/utils"
 import { useCampus } from "./campus-context"
-import { CalendarDays, Clock, ChevronDown, ChevronUp } from "lucide-react"
+import { CalendarDays, Clock, ChevronDown, ChevronUp, CalendarPlus, AlertTriangle } from "lucide-react"
 
 type Term = "Summer 2026" | "Fall 2026" | "Winter 2027"
 type Category = "registration" | "withdrawal" | "exams" | "payment" | "classes" | "holiday"
@@ -102,6 +102,77 @@ function formatDate(dateStr: string): string {
   return d.toLocaleDateString("en-CA", { month: "long", day: "numeric", year: "numeric" })
 }
 
+// Categories that carry real consequences (money / grades) — the ones that matter most.
+const CRITICAL_CATEGORIES: Category[] = ["registration", "withdrawal", "payment", "exams"]
+
+// Smart default: the term that "today" falls in, or the next upcoming term.
+function defaultTerm(deadlines: { term: Term; days: number }[]): Term {
+  for (const term of TERM_ORDER) {
+    if (deadlines.some((d) => d.term === term && d.days >= 0)) return term
+  }
+  return TERM_ORDER[TERM_ORDER.length - 1]
+}
+
+function icsDate(dateStr: string): string {
+  return dateStr.replace(/-/g, "")  // YYYYMMDD all-day format
+}
+
+function buildICS(events: { id: string; title: string; date: string }[]): string {
+  const lines = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//CampusQ//Academic Deadlines//EN",
+    "CALSCALE:GREGORIAN",
+  ]
+  for (const e of events) {
+    const start = icsDate(e.date)
+    // all-day event; DTEND is next day per ICS spec
+    const end = icsDate(
+      new Date(parseDate(e.date).getTime() + 86400000).toISOString().slice(0, 10)
+    )
+    lines.push(
+      "BEGIN:VEVENT",
+      `UID:campusq-${e.id}@try-campusq`,
+      `DTSTART;VALUE=DATE:${start}`,
+      `DTEND;VALUE=DATE:${end}`,
+      `SUMMARY:${e.title}`,
+      "DESCRIPTION:Carleton academic deadline (via CampusQ). Verify at carleton.ca.",
+      "BEGIN:VALARM",
+      "TRIGGER:-P2D",
+      "ACTION:DISPLAY",
+      `DESCRIPTION:Reminder: ${e.title} in 2 days`,
+      "END:VALARM",
+      "END:VEVENT",
+    )
+  }
+  lines.push("END:VCALENDAR")
+  return lines.join("\r\n")
+}
+
+function downloadICS(events: { id: string; title: string; date: string }[], filename: string) {
+  const blob = new Blob([buildICS(events)], { type: "text/calendar;charset=utf-8" })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
+}
+
+function googleCalUrl(title: string, dateStr: string): string {
+  const start = icsDate(dateStr)
+  const end = icsDate(new Date(parseDate(dateStr).getTime() + 86400000).toISOString().slice(0, 10))
+  const params = new URLSearchParams({
+    action: "TEMPLATE",
+    text: title,
+    dates: `${start}/${end}`,
+    details: "Carleton academic deadline (via CampusQ). Verify at carleton.ca.",
+  })
+  return `https://calendar.google.com/calendar/render?${params.toString()}`
+}
+
 function UrgencyBadge({ days }: { days: number }) {
   if (days < 0) return <span className="text-[10px] text-muted-foreground/40">Passed</span>
   if (days === 0) return <span className="text-[10px] font-bold text-red-500">Today</span>
@@ -150,11 +221,17 @@ function HeroCard({ deadline }: { deadline: Deadline & { days: number } }) {
 
 export function DeadlineTracker() {
   const { theme } = useCampus()
-  const [activeFilter, setActiveFilter] = React.useState<"All" | Term>("All")
+  const withDays = DEADLINES.map((d) => ({ ...d, days: daysUntil(d.date) }))
+
+  // Smart default — open on the current/next term, not "All"
+  const [activeFilter, setActiveFilter] = React.useState<"All" | Term>(() => defaultTerm(withDays))
   const [showPast, setShowPast] = React.useState(false)
   const [activeCat, setActiveCat] = React.useState<Category | "All">("All")
 
-  const withDays = DEADLINES.map((d) => ({ ...d, days: daysUntil(d.date) }))
+  // The single most urgent CRITICAL deadline — the big countdown
+  const nextCritical = withDays
+    .filter((d) => d.days >= 0 && CRITICAL_CATEGORIES.includes(d.category))
+    .sort((a, b) => a.days - b.days)[0]
 
   // Hero: next 3 upcoming
   const heroDeadlines = withDays
@@ -180,12 +257,56 @@ export function DeadlineTracker() {
   return (
     <div className="flex flex-col gap-6">
       {/* Header */}
-      <div>
-        <h2 className="text-lg font-semibold mb-0.5">Academic Deadlines</h2>
-        <p className="text-sm text-muted-foreground">
-          Key dates for the 2025–26 and 2026–27 academic year.
-        </p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h2 className="text-lg font-semibold mb-0.5">Academic Deadlines</h2>
+          <p className="text-sm text-muted-foreground">
+            Key dates for the 2025–26 and 2026–27 academic year.
+          </p>
+        </div>
+        <button
+          onClick={() => downloadICS(
+            withDays.filter((d) => d.days >= 0).map((d) => ({ id: d.id, title: d.title, date: d.date })),
+            "campusq-deadlines.ics"
+          )}
+          className={cn("shrink-0 inline-flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-lg text-white transition-opacity hover:opacity-90", theme.bgClass)}
+          title="Download all upcoming deadlines as a calendar file"
+        >
+          <CalendarPlus className="size-3.5" /> Add all to calendar
+        </button>
       </div>
+
+      {/* Big countdown — next critical deadline */}
+      {nextCritical && (
+        <div className={cn(
+          "rounded-2xl border p-4 flex items-center gap-4",
+          nextCritical.days <= 7 ? "border-red-500/40 bg-red-500/10" : "border-border bg-card"
+        )}>
+          <div className={cn(
+            "flex flex-col items-center justify-center rounded-xl px-4 py-2 shrink-0",
+            nextCritical.days <= 7 ? "bg-red-500 text-white" : "bg-secondary text-foreground"
+          )}>
+            <span className="text-2xl font-bold leading-none tabular-nums">
+              {nextCritical.days === 0 ? "!" : nextCritical.days}
+            </span>
+            <span className="text-[9px] uppercase tracking-wider mt-0.5">
+              {nextCritical.days === 0 ? "today" : nextCritical.days === 1 ? "day" : "days"}
+            </span>
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60 mb-0.5">Next critical deadline</p>
+            <p className="text-sm font-semibold text-foreground leading-snug">{nextCritical.title}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{formatDate(nextCritical.date)}</p>
+          </div>
+          <a
+            href={googleCalUrl(nextCritical.title, nextCritical.date)}
+            target="_blank" rel="noopener noreferrer"
+            className="shrink-0 inline-flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-lg border border-border hover:bg-secondary transition-colors"
+          >
+            <CalendarPlus className="size-3.5" /> Remind me
+          </a>
+        </div>
+      )}
 
       {/* Hero cards — next 3 upcoming */}
       {heroDeadlines.length > 0 && (
@@ -277,10 +398,21 @@ export function DeadlineTracker() {
                       </div>
 
                       <div className="flex items-center gap-2 shrink-0">
-                        <span className={cn("text-[10px] font-medium px-1.5 py-0.5 rounded-md", cat.bg, cat.color)}>
+                        <span className={cn("text-[10px] font-medium px-1.5 py-0.5 rounded-md hidden sm:inline", cat.bg, cat.color)}>
                           {cat.label}
                         </span>
                         <UrgencyBadge days={d.days} />
+                        {d.days >= 0 && (
+                          <a
+                            href={googleCalUrl(d.title, d.date)}
+                            target="_blank" rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            title="Add to calendar"
+                            className="p-1 rounded-md text-muted-foreground/40 hover:text-foreground hover:bg-secondary transition-colors"
+                          >
+                            <CalendarPlus className="size-3.5" />
+                          </a>
+                        )}
                       </div>
                     </div>
                   )
