@@ -15,6 +15,7 @@ export function FeedbackModal({ open, onClose, lastQuery = "" }: FeedbackModalPr
   const [query, setQuery] = React.useState(lastQuery)
   const [submitted, setSubmitted] = React.useState(false)
   const [isLoading, setIsLoading] = React.useState(false)
+  const [error, setError] = React.useState(false)
 
   React.useEffect(() => {
     setQuery(lastQuery)
@@ -34,15 +35,17 @@ export function FeedbackModal({ open, onClose, lastQuery = "" }: FeedbackModalPr
   const handleSubmit = async () => {
     if (!message.trim()) return
     setIsLoading(true)
+    setError(false)
     const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
     try {
       const formData = new FormData()
       formData.append("message", message)
       formData.append("query", query)
-      await fetch(`${API_URL}/api/report`, { method: "POST", body: formData })
+      const res = await fetch(`${API_URL}/api/report`, { method: "POST", body: formData })
+      if (!res.ok) throw new Error("Failed")
       setSubmitted(true)
     } catch {
-      setSubmitted(true)
+      setError(true)
     } finally {
       setIsLoading(false)
     }
@@ -100,6 +103,11 @@ export function FeedbackModal({ open, onClose, lastQuery = "" }: FeedbackModalPr
                 />
               </div>
 
+              {error && (
+                <p className="text-xs text-red-500 text-center">
+                  Something went wrong. Please try again.
+                </p>
+              )}
               <Button
                 onClick={handleSubmit}
                 disabled={!message.trim() || isLoading}
