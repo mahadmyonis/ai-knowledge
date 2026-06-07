@@ -4,7 +4,7 @@ import re
 import time
 import uuid
 import contextvars
-from datetime import datetime
+from datetime import datetime, date
 
 # Request-scoped session id — set once per request, read by log_query.
 # Avoids threading session_id through every log call site.
@@ -904,9 +904,8 @@ async def chat_stream(
             if not context_text:
                 log_no_context(user_query, "stream_rag")
 
-            from datetime import date as _date
-        _today = _date.today().strftime("%B %d, %Y")
-        system_prompt = f"""You are CampusQ, an AI assistant for Carleton University students. You answer questions about courses, programs, prerequisites, regulations, and academic life using the Carleton Academic Calendar.
+            _today = date.today().strftime("%B %d, %Y")
+            system_prompt = f"""You are CampusQ, an AI assistant for Carleton University students. You answer questions about courses, programs, prerequisites, regulations, and academic life using the Carleton Academic Calendar.
 
 You are independent — not officially affiliated with Carleton University.
 
