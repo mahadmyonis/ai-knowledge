@@ -9,7 +9,6 @@ interface IntentRow { intent: string; label: string; count: number; example: str
 interface UnansweredGroup { theme: string; count: number; examples: string[] }
 interface NegativeItem { question: string; answer: string; department: string }
 interface TopQuestion { question: string; count: number }
-interface DailyPoint { date: string; queries: number }
 
 const TIMEFRAMES = [
   { label: "Last 24 hours", days: 1   },
@@ -31,7 +30,6 @@ interface DashboardData {
     thumbs_down: number
     top_department: string
   }
-  daily_trend: DailyPoint[]
   intents: IntentRow[]
   top_questions: TopQuestion[]
   unanswered: UnansweredGroup[]
@@ -44,26 +42,38 @@ function Trend({ t }: { t: "up" | "down" | "flat" }) {
   return <Minus className="size-3 text-zinc-300" />
 }
 
-function BarChart({ data }: { data: DailyPoint[] }) {
-  if (!data || data.length === 0) return (
-    <div className="flex items-center justify-center h-24 text-xs text-zinc-400">No activity data yet.</div>
+// Short labels for the chart
+const INTENT_SHORT: Record<string, string> = {
+  "Prerequisites & Course Requirements": "Prereqs",
+  "Program Requirements":                "Programs",
+  "Deadlines & Dates":                   "Deadlines",
+  "Course Lookups":                      "Courses",
+  "Registration Procedures":             "Registration",
+  "Academic Regulations & GPA":          "Regulations",
+  "Services & Campus Life":              "Services",
+  "General / Other":                     "Other",
+}
+
+function CategoryChart({ intents }: { intents: IntentRow[] }) {
+  if (!intents || intents.length === 0) return (
+    <div className="flex items-center justify-center h-32 text-xs text-zinc-400">No data yet.</div>
   )
-  const max = Math.max(...data.map(d => d.queries), 1)
+  const max = Math.max(...intents.map(r => r.count), 1)
   return (
-    <div className="flex items-end gap-[3px] h-24 w-full pt-2">
-      {data.map((d) => {
-        const pct = d.queries / max
-        const date = new Date(d.date + "T12:00:00")
-        const label = date.toLocaleDateString("en-CA", { month: "short", day: "numeric" })
+    <div className="flex items-end gap-2 h-32 w-full">
+      {intents.map((r) => {
+        const pct = r.count / max
+        const shortLabel = INTENT_SHORT[r.label] ?? r.label.split(" ")[0]
         return (
-          <div key={d.date} className="flex-1 flex flex-col items-center gap-0.5 group relative">
-            <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-zinc-900 text-white text-[10px] rounded px-1.5 py-0.5 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-              {label}: {d.queries}
+          <div key={r.intent} className="flex-1 flex flex-col items-center gap-1 group relative">
+            <div className="absolute -top-7 left-1/2 -translate-x-1/2 bg-zinc-900 text-white text-[10px] rounded px-1.5 py-0.5 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+              {r.label}: {r.count}
             </div>
             <div
-              className="w-full rounded-sm bg-zinc-800 hover:bg-zinc-600 transition-colors cursor-default"
-              style={{ height: `${Math.max(pct * 100, 6)}%` }}
+              className="w-full rounded-t-sm bg-zinc-800 hover:bg-zinc-600 transition-colors cursor-default"
+              style={{ height: `${Math.max(pct * 112, 6)}px` }}
             />
+            <span className="text-[9px] text-zinc-400 text-center leading-tight">{shortLabel}</span>
           </div>
         )
       })}
@@ -121,7 +131,6 @@ export default function DashboardPage() {
 
   if (!data) return null
   const s = data.snapshot
-  const trend = data.daily_trend ?? []
 
   const headlineParts = [
     `${s.total_questions.toLocaleString()} questions asked`,
@@ -205,16 +214,10 @@ export default function DashboardPage() {
             ))}
           </div>
 
-          {/* Right: bar chart */}
+          {/* Right: category chart */}
           <div className="bg-white border border-zinc-200 rounded-2xl p-5 flex flex-col justify-between">
-            <p className="text-[11px] font-semibold uppercase tracking-widest text-zinc-400 mb-3">Daily activity</p>
-            <BarChart data={trend} />
-            {trend.length > 0 && (
-              <div className="flex justify-between mt-2">
-                <span className="text-[10px] text-zinc-300">{new Date(trend[0].date + "T12:00:00").toLocaleDateString("en-CA", { month: "short", day: "numeric" })}</span>
-                <span className="text-[10px] text-zinc-300">{new Date(trend[trend.length - 1].date + "T12:00:00").toLocaleDateString("en-CA", { month: "short", day: "numeric" })}</span>
-              </div>
-            )}
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-zinc-400 mb-4">What students are confused about</p>
+            <CategoryChart intents={data.intents} />
           </div>
         </div>
 
