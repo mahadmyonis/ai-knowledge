@@ -404,6 +404,20 @@ async def chat_endpoint(
     _current_session.set(session_id)
     user_query = question
     t_start = time.time()
+
+    # Inject last-mentioned course code from history for vague follow-up queries
+    if not re.search(r'[A-Z]{3,4}\s*\d{4}', user_query, re.IGNORECASE):
+        try:
+            _hist = json.loads(history)
+            for _msg in reversed(_hist):
+                _content = _msg.get("content", "") if isinstance(_msg, dict) else ""
+                _found = re.search(r'([A-Z]{3,4}\s*\d{4})', _content, re.IGNORECASE)
+                if _found:
+                    user_query = f"{user_query} ({_found.group(1)})"
+                    break
+        except Exception:
+            pass
+
     print(f"Searching database for: {user_query}")
 
     course_matches = re.findall(r'([a-zA-Z]{4})\s*(\d{4})', user_query, re.IGNORECASE)
@@ -494,8 +508,9 @@ async def chat_endpoint(
         is_schedule_query = any(kw in _q_lower for kw in [
             "open", "closed", "available", "offered", "offering",
             "section", "crn", "waitlist", "full",
-            "who teaches", "who is teaching", "instructor",
+            "who teaches", "who is teaching", "instructor", "professor",
             "when is", "what time", "schedule",
+            "what semester", "what term", "which semester", "which term",
             "fall 2026", "winter 2027", "summer 2026",
             "f26", "w27", "su26",
         ])
@@ -666,6 +681,21 @@ async def chat_stream(
 
     t_start = time.time()
 
+    # If the query has no course code but is a follow-up (e.g. "what semester is this taught?"),
+    # inject the last-mentioned course code from history so RAG can find the right data.
+    _course_in_query = re.search(r'[A-Z]{3,4}\s*\d{4}', user_query, re.IGNORECASE)
+    if not _course_in_query:
+        try:
+            _hist = json.loads(history)
+            for _msg in reversed(_hist):
+                _content = _msg.get("content", "") if isinstance(_msg, dict) else ""
+                _found = re.search(r'([A-Z]{3,4}\s*\d{4})', _content, re.IGNORECASE)
+                if _found:
+                    user_query = f"{user_query} ({_found.group(1)})"
+                    break
+        except Exception:
+            pass
+
     # Keywords that indicate the user is asking a question *about* courses,
     # not just looking them up. These queries need a full AI answer.
     QUESTION_INDICATORS = [
@@ -679,6 +709,7 @@ async def chat_stream(
         "who teaches", "who is teaching", "instructor", "professor",
         "open", "closed", "available", "offered", "offering", "waitlist",
         "section", "crn", "what time", "when is", "schedule",
+        "what semester", "what term", "which semester", "which term",
         "fall 2026", "winter 2027", "summer 2026",
     ]
 
