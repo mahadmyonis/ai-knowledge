@@ -534,6 +534,36 @@ async def chat_endpoint(
                         m.score = min(1.0, m.score + 0.25)
                 all_matches.extend(ns_results.matches)
 
+        # Direct schedule fetch: if query mentions a course code + term, guarantee that
+        # vector is included regardless of embedding similarity score
+        if is_schedule_query and course_matches:
+            _term_slugs = []
+            if "summer 2026" in _q_lower or "su26" in _q_lower or "summer" in _q_lower:
+                _term_slugs.append("SU26")
+            if "fall 2026" in _q_lower or "f26" in _q_lower or "fall" in _q_lower:
+                _term_slugs.append("F26")
+            if "winter 2027" in _q_lower or "w27" in _q_lower or "winter" in _q_lower:
+                _term_slugs.append("W27")
+            if not _term_slugs:
+                _term_slugs = ["F26", "W27", "SU26"]
+            _fetch_ids = []
+            for dept, num in course_matches:
+                code_slug = re.sub(r"[^A-Z0-9]", "", f"{dept}{num}".upper())
+                for slug in _term_slugs:
+                    _fetch_ids.append(f"{code_slug}_{slug}")
+            if _fetch_ids:
+                try:
+                    _fetched = index.fetch(ids=_fetch_ids, namespace="schedule")
+                    _existing_ids = {m.id for m in all_matches}
+                    for vec_id, vec in _fetched.vectors.items():
+                        if vec_id not in _existing_ids:
+                            class _FakeMatch:
+                                def __init__(self, id, score, metadata):
+                                    self.id = id; self.score = score; self.metadata = metadata
+                            all_matches.append(_FakeMatch(vec_id, 0.85, vec.metadata))
+                except Exception:
+                    pass
+
         all_matches.sort(key=lambda m: m.score, reverse=True)
         all_matches = all_matches[:keep_total]
 
@@ -614,6 +644,9 @@ Do NOT ask for clarification when:
 - The question mentions a specific program or course already
 - The answer is universal (e.g. grading scale, exam policies)
 - You already know the program from earlier in the conversation
+
+SCHEDULE QUESTIONS — IMPORTANT:
+When a student asks if a course is offered in a specific term and the context shows the course in a DIFFERENT term, do NOT say "outside of what I currently know." Instead say clearly: "[Course] is not offered in [requested term], but it IS offered in [terms shown in context]." Only say "outside of what I currently know" if the course appears nowhere in the schedule context at all.
 
 CONTEXT:
 {context_text if context_text else "No context retrieved."}
@@ -786,8 +819,9 @@ async def chat_stream(
             is_schedule_query = any(kw in _q_lower for kw in [
                 "open", "closed", "available", "offered", "offering",
                 "section", "crn", "waitlist", "full",
-                "who teaches", "who is teaching", "instructor",
+                "who teaches", "who is teaching", "instructor", "professor",
                 "when is", "what time", "schedule",
+                "what semester", "what term", "which semester", "which term",
                 "fall 2026", "winter 2027", "summer 2026",
                 "f26", "w27", "su26",
             ])
@@ -808,6 +842,35 @@ async def chat_stream(
                         if ns == "schedule" and is_schedule_query:
                             m.score = min(1.0, m.score + 0.25)
                     all_matches.extend(ns_results.matches)
+
+            # Direct schedule fetch: guarantee course+term vector is included
+            if is_schedule_query and course_matches:
+                _term_slugs = []
+                if "summer 2026" in _q_lower or "su26" in _q_lower or "summer" in _q_lower:
+                    _term_slugs.append("SU26")
+                if "fall 2026" in _q_lower or "f26" in _q_lower or "fall" in _q_lower:
+                    _term_slugs.append("F26")
+                if "winter 2027" in _q_lower or "w27" in _q_lower or "winter" in _q_lower:
+                    _term_slugs.append("W27")
+                if not _term_slugs:
+                    _term_slugs = ["F26", "W27", "SU26"]
+                _fetch_ids = []
+                for dept, num in course_matches:
+                    code_slug = re.sub(r"[^A-Z0-9]", "", f"{dept}{num}".upper())
+                    for slug in _term_slugs:
+                        _fetch_ids.append(f"{code_slug}_{slug}")
+                if _fetch_ids:
+                    try:
+                        _fetched = index.fetch(ids=_fetch_ids, namespace="schedule")
+                        _existing_ids = {m.id for m in all_matches}
+                        for vec_id, vec in _fetched.vectors.items():
+                            if vec_id not in _existing_ids:
+                                class _FakeMatch:
+                                    def __init__(self, id, score, metadata):
+                                        self.id = id; self.score = score; self.metadata = metadata
+                                all_matches.append(_FakeMatch(vec_id, 0.85, vec.metadata))
+                    except Exception:
+                        pass
 
             all_matches.sort(key=lambda m: m.score, reverse=True)
             all_matches = all_matches[:keep_total]
@@ -868,6 +931,9 @@ Do NOT ask for clarification when:
 - The question mentions a specific program or course already
 - The answer is universal (e.g. grading scale, exam policies)
 - You already know the program from earlier in the conversation
+
+SCHEDULE QUESTIONS — IMPORTANT:
+When a student asks if a course is offered in a specific term and the context shows the course in a DIFFERENT term, do NOT say "outside of what I currently know." Instead say clearly: "[Course] is not offered in [requested term], but it IS offered in [terms shown in context]." Only say "outside of what I currently know" if the course appears nowhere in the schedule context at all.
 
 CONTEXT:
 {context_text if context_text else "No context retrieved."}"""
