@@ -194,39 +194,33 @@ export default function DashboardPage() {
 
         {/* ── Top row ── */}
 
-        {/* Questions */}
-        <div className="col-span-2 bg-white rounded-2xl p-5 flex flex-col justify-between shadow-sm border border-stone-100">
-          <p className="text-xs font-medium text-stone-400">Questions asked</p>
-          <div>
-            <p className="text-4xl font-bold text-stone-900 tracking-tight">{s.total_questions.toLocaleString()}</p>
-            <p className="text-xs text-stone-400 mt-1">{timeLabel}</p>
+        {/* 3 stat cards stacked in one column */}
+        <div className="col-span-2 flex flex-col gap-2">
+          <div className="flex-1 bg-white rounded-2xl px-4 py-3 flex items-center justify-between shadow-sm border border-stone-100">
+            <p className="text-xs text-stone-400">Questions asked</p>
+            <div className="text-right">
+              <p className="text-xl font-bold text-stone-900 tabular-nums">{s.total_questions.toLocaleString()}</p>
+              <p className="text-[10px] text-stone-400">{timeLabel}</p>
+            </div>
           </div>
-        </div>
-
-        {/* Helpfulness */}
-        <div className="col-span-2 bg-white rounded-2xl p-5 flex flex-col justify-between shadow-sm border border-stone-100">
-          <p className="text-xs font-medium text-stone-400">Helpfulness rate</p>
-          <div>
-            <p className="text-4xl font-bold text-emerald-600 tracking-tight">
-              {s.accuracy !== null ? `${s.accuracy}%` : "—"}
-            </p>
-            <p className="text-xs text-stone-400 mt-1">
-              {s.accuracy !== null ? `${s.thumbs_up} 👍 · ${s.thumbs_down} 👎` : "no ratings yet"}
-            </p>
+          <div className="flex-1 bg-white rounded-2xl px-4 py-3 flex items-center justify-between shadow-sm border border-stone-100">
+            <p className="text-xs text-stone-400">Helpfulness</p>
+            <div className="text-right">
+              <p className="text-xl font-bold text-emerald-600 tabular-nums">{s.accuracy !== null ? `${s.accuracy}%` : "—"}</p>
+              <p className="text-[10px] text-stone-400">{s.accuracy !== null ? `${s.thumbs_up} 👍 · ${s.thumbs_down} 👎` : "no ratings yet"}</p>
+            </div>
           </div>
-        </div>
-
-        {/* Top dept */}
-        <div className="col-span-2 bg-white rounded-2xl p-5 flex flex-col justify-between shadow-sm border border-stone-100">
-          <p className="text-xs font-medium text-stone-400">Top department</p>
-          <div>
-            <p className="text-xl font-bold text-stone-900 tracking-tight leading-tight">{s.top_department}</p>
-            <p className="text-xs text-stone-400 mt-1">by question volume</p>
+          <div className="flex-1 bg-white rounded-2xl px-4 py-3 flex items-center justify-between shadow-sm border border-stone-100">
+            <p className="text-xs text-stone-400">Top dept.</p>
+            <div className="text-right">
+              <p className="text-sm font-bold text-stone-900 leading-tight">{s.top_department}</p>
+              <p className="text-[10px] text-stone-400">by volume</p>
+            </div>
           </div>
         </div>
 
         {/* Time of day chart */}
-        <div className="col-span-6 bg-white rounded-2xl p-5 flex flex-col shadow-sm border border-stone-100">
+        <div className="col-span-10 bg-white rounded-2xl p-5 flex flex-col shadow-sm border border-stone-100">
           <p className="text-xs font-medium text-stone-400 mb-3 shrink-0">When students ask questions</p>
           <div className="flex-1 min-h-0">
             <HourlyChart data={data.hourly_trend ?? []} />
