@@ -564,19 +564,59 @@ function StructuredRequirements({ groups, variant }: { groups: ReqGroup[]; varia
   )
 }
 
+// degree abbreviation helpers (adapted from CarletonCourseMap)
+function degreeAbbrev(facultyName: string, programName: string): string {
+  const p = programName.toLowerCase()
+  if (p.includes("computer science") || p.includes("computer mathematics")) return "B.C.S."
+  if (p.includes("cybersecurity")) return "B.Cyber."
+  if (p.includes("mathematics")) return "B.Math."
+  if (p.includes("statistics")) return "B.Math."
+  if (p.includes("data science")) return "B.Sc."
+  if (p.includes("architecture") && !p.includes("history")) return "B.Arch."
+  if (p.includes("journalism")) return "B.J."
+  if (p.includes("social work")) return "B.S.W."
+  if (p.includes("music")) return "B.Mus."
+  if (p.includes("accounting")) return "B.Acc."
+  if (p.includes("international business")) return "B.I.B."
+  if (p.includes("nursing")) return "B.Sc.N."
+  const f = facultyName.toLowerCase()
+  if (f.includes("engineering")) return "B.Eng."
+  if (f.includes("science")) return "B.Sc."
+  if (f.includes("arts")) return "B.A."
+  if (f.includes("business")) return "B.Com."
+  if (f.includes("public affairs")) return "B.P.A."
+  if (f.includes("information technology")) return "B.I.T."
+  if (f.includes("health")) return "B.H.Sc."
+  return "B.A."
+}
+
+type BadgeColors = { bg: string; text: string }
+function abbrevColors(ab: string): BadgeColors {
+  if (ab.startsWith("B.Eng"))  return { bg: "bg-blue-100 dark:bg-blue-950",   text: "text-blue-700 dark:text-blue-300" }
+  if (ab.startsWith("B.Sc"))   return { bg: "bg-emerald-100 dark:bg-emerald-950", text: "text-emerald-700 dark:text-emerald-300" }
+  if (ab.startsWith("B.C.S")) return { bg: "bg-red-100 dark:bg-red-950",    text: "text-red-700 dark:text-red-400" }
+  if (ab.startsWith("B.Cyber")) return { bg: "bg-red-100 dark:bg-red-950",  text: "text-red-700 dark:text-red-400" }
+  if (ab.startsWith("B.A"))    return { bg: "bg-amber-100 dark:bg-amber-950", text: "text-amber-700 dark:text-amber-400" }
+  if (ab.startsWith("B.Com")) return { bg: "bg-purple-100 dark:bg-purple-950", text: "text-purple-700 dark:text-purple-400" }
+  if (ab.startsWith("B.Math")) return { bg: "bg-indigo-100 dark:bg-indigo-950", text: "text-indigo-700 dark:text-indigo-400" }
+  if (ab.startsWith("B.I.T")) return { bg: "bg-cyan-100 dark:bg-cyan-950",  text: "text-cyan-700 dark:text-cyan-400" }
+  if (ab.startsWith("B.P.A")) return { bg: "bg-yellow-100 dark:bg-yellow-950", text: "text-yellow-700 dark:text-yellow-500" }
+  return                               { bg: "bg-secondary",                  text: "text-muted-foreground" }
+}
+
 type ViewState =
   | { screen: "directory" }
   | { screen: "streams"; program: Program; faculty: typeof FACULTIES[number] }
   | { screen: "detail"; program: Program; streamLabel?: string; queryName: string }
 
 export function ProgramExplorer() {
-  const { theme } = useCampus()
+  useCampus()
   const [view, setView] = React.useState<ViewState>({ screen: "directory" })
   const [result, setResult] = React.useState("")
   const [structured, setStructured] = React.useState<{ groups: ReqGroup[]; variant: string } | null>(null)
   const [loading, setLoading] = React.useState(false)
   const [search, setSearch] = React.useState("")
-  const [activeFaculty, setActiveFaculty] = React.useState<string>("All")
+  const [selectedFaculty, setSelectedFaculty] = React.useState<typeof FACULTIES[number] | null>(null)
   const progIndex = React.useRef<ProgIndexEntry[] | null>(null)
 
   const getIndex = async (): Promise<ProgIndexEntry[]> => {
@@ -678,6 +718,14 @@ export function ProgramExplorer() {
     setStructured(null)
   }
 
+  const goToDirectory = () => {
+    setView({ screen: "directory" })
+    setResult("")
+    setStructured(null)
+    setSelectedFaculty(null)
+    setSearch("")
+  }
+
   // ── Stream picker (grouped by option type) ─────────────────────────────────
   if (view.screen === "streams") {
     const { program, faculty } = view
@@ -685,7 +733,7 @@ export function ProgramExplorer() {
     return (
       <div className="flex flex-col gap-5">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => { setView({ screen: "directory" }); setResult("") }}>
+          <Button variant="ghost" size="icon" onClick={goToDirectory}>
             <ArrowLeft className="size-4" />
           </Button>
           <div className="flex items-center gap-2.5 min-w-0">
@@ -773,27 +821,50 @@ export function ProgramExplorer() {
 
   // ── Directory ─────────────────────────────────────────────────────────────
   const isSearching = search.trim().length > 0
-  const searchResults = isSearching
-    ? ALL_PROGRAMS.filter(
-        (p) =>
-          p.name.toLowerCase().includes(search.toLowerCase()) ||
-          p.description.toLowerCase().includes(search.toLowerCase()) ||
-          p.faculty.toLowerCase().includes(search.toLowerCase())
-      )
-    : null
 
-  const displayFaculties = activeFaculty === "All"
-    ? FACULTIES
-    : FACULTIES.filter((f) => f.name === activeFaculty)
+  // When drilled into a faculty, search filters programs; otherwise filters faculty names
+  const filteredFaculties = isSearching
+    ? FACULTIES.filter((f) => f.name.toLowerCase().includes(search.toLowerCase()))
+    : FACULTIES
 
-  const totalCount = ALL_PROGRAMS.length
+  const filteredPrograms = selectedFaculty
+    ? (isSearching
+        ? selectedFaculty.programs.filter((p) => p.name.toLowerCase().includes(search.toLowerCase()))
+        : selectedFaculty.programs
+      ).map((p) => ({ ...p, faculty: selectedFaculty.name }))
+    : []
+
+  const isEmpty = selectedFaculty
+    ? isSearching && filteredPrograms.length === 0
+    : isSearching && filteredFaculties.length === 0
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-4">
       {/* Header */}
-      <div>
-        <h2 className="text-lg font-semibold mb-0.5">Programs</h2>
-        <p className="text-sm text-muted-foreground">{totalCount} Carleton programs — click any to see requirements</p>
+      <div className="flex items-center gap-3">
+        {selectedFaculty && (
+          <Button variant="ghost" size="icon" className="shrink-0"
+            onClick={() => { setSelectedFaculty(null); setSearch("") }}>
+            <ArrowLeft className="size-4" />
+          </Button>
+        )}
+        <div className="min-w-0">
+          {selectedFaculty ? (
+            <>
+              <p className={cn("text-[10px] font-semibold uppercase tracking-widest", selectedFaculty.color)}>
+                {selectedFaculty.name}
+              </p>
+              <h2 className="text-base font-semibold leading-tight">
+                {selectedFaculty.programs.length} programs
+              </h2>
+            </>
+          ) : (
+            <>
+              <h2 className="text-lg font-semibold mb-0.5">Programs</h2>
+              <p className="text-sm text-muted-foreground">{FACULTIES.length} faculties · {ALL_PROGRAMS.length} programs</p>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Search */}
@@ -803,7 +874,7 @@ export function ProgramExplorer() {
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search any program…"
+          placeholder={selectedFaculty ? "Search programs…" : "Search faculties…"}
           className="w-full pl-9 pr-9 py-2.5 rounded-xl border border-border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 placeholder:text-muted-foreground/40"
         />
         {search && (
@@ -816,75 +887,56 @@ export function ProgramExplorer() {
         )}
       </div>
 
-      {/* Faculty tabs — only show when not searching */}
-      {!isSearching && (
-        <div className="flex gap-1.5 flex-wrap">
-          {["All", ...FACULTIES.map((f) => f.name)].map((name) => {
-            const faculty = FACULTIES.find((f) => f.name === name)
-            const isActive = activeFaculty === name
-            return (
-              <button
-                key={name}
-                onClick={() => setActiveFaculty(name)}
-                className={cn(
-                  "px-3 py-1.5 rounded-lg text-xs font-medium transition-all",
-                  isActive
-                    ? "bg-foreground text-background"
-                    : "border border-border text-muted-foreground hover:text-foreground hover:bg-secondary"
-                )}
-              >
-                {faculty ? faculty.short : "All"}
-              </button>
-            )
-          })}
+      {/* Empty state */}
+      {isEmpty && (
+        <div className="text-center py-12 text-sm text-muted-foreground">
+          No results for &ldquo;{search}&rdquo;
         </div>
       )}
 
-      {/* Search results */}
-      {isSearching ? (
-        <div>
-          {!searchResults?.length ? (
-            <div className="text-center py-12 text-sm text-muted-foreground">No programs found for "{search}"</div>
-          ) : (
-            <div className="space-y-1.5">
-              <p className="text-xs text-muted-foreground mb-3">{searchResults.length} result{searchResults.length !== 1 ? "s" : ""}</p>
-              {searchResults.map((p) => {
-                const faculty = FACULTIES.find((f) => f.name === p.faculty)!
-                return (
-                  <ProgramCard
-                    key={p.name}
-                    program={p}
-                    faculty={faculty}
-                    onClick={() => handleProgramClick(p)}
-                  />
-                )
-              })}
-            </div>
-          )}
-        </div>
-      ) : (
-        <div className="space-y-6">
-          {displayFaculties.map((faculty) => (
-            <div key={faculty.name}>
-              <div className="flex items-center gap-2 mb-2.5">
-                <span className={cn("size-2 rounded-full", faculty.bgColor)} />
-                <h3 className="text-xs font-semibold text-muted-foreground">{faculty.name}</h3>
-                <span className="text-xs text-muted-foreground/40">({faculty.programs.length})</span>
+      {/* Faculty rows — top-level view */}
+      {!selectedFaculty && !isEmpty && (
+        <div className="rounded-xl border border-border overflow-hidden">
+          {filteredFaculties.map((faculty, i) => (
+            <button
+              key={faculty.name}
+              onClick={() => { setSelectedFaculty(faculty); setSearch("") }}
+              className={cn(
+                "w-full flex items-center justify-between gap-3 px-4 py-3 text-left hover:bg-secondary/40 transition-colors group",
+                i < filteredFaculties.length - 1 && "border-b border-border"
+              )}
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <span className={cn("size-2 rounded-full shrink-0", faculty.bgColor)} />
+                <span className="text-sm text-foreground truncate">{faculty.name}</span>
+                <span className="text-xs text-muted-foreground/50 shrink-0">{faculty.programs.length}</span>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-                {faculty.programs.map((p) => (
-                  <ProgramCard
-                    key={p.name}
-                    program={{ ...p, faculty: faculty.name }}
-                    faculty={faculty}
-                    onClick={() => handleProgramClick({ ...p, faculty: faculty.name })}
-                  />
-                ))}
-              </div>
-            </div>
+              <ChevronRight className="size-3.5 text-muted-foreground/30 shrink-0 group-hover:text-muted-foreground/70 transition-colors" />
+            </button>
           ))}
         </div>
       )}
+
+      {/* Program cards — drilled-in view */}
+      {selectedFaculty && !isEmpty && (
+        <div className="grid grid-cols-2 gap-2">
+          {filteredPrograms.map((p) => (
+            <ProgramCard
+              key={p.name}
+              program={p}
+              faculty={selectedFaculty}
+              onClick={() => handleProgramClick(p)}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Footer count */}
+      <p className="text-xs text-muted-foreground/50 text-right">
+        {selectedFaculty
+          ? `${filteredPrograms.length} program${filteredPrograms.length !== 1 ? "s" : ""}`
+          : `${filteredFaculties.length} facult${filteredFaculties.length !== 1 ? "ies" : "y"}`}
+      </p>
     </div>
   )
 }
@@ -898,25 +950,28 @@ function ProgramCard({
   faculty: typeof FACULTIES[number]
   onClick: () => void
 }) {
+  const ab = degreeAbbrev(faculty.name, program.name)
+  const colors = abbrevColors(ab)
   const count = program.streams?.length ?? 0
   return (
     <button
       onClick={onClick}
-      className="group flex items-stretch gap-3 rounded-xl border border-border bg-card hover:border-border/60 hover:shadow-sm hover:-translate-y-px transition-all text-left overflow-hidden"
+      className="group flex flex-col items-start gap-2 rounded-xl border border-border bg-card hover:border-primary/40 hover:bg-secondary/30 hover:-translate-y-px transition-all text-left p-3"
     >
-      <span className={cn("w-1 shrink-0", faculty.bgColor)} />
-      <div className="min-w-0 flex-1 py-3 pr-3">
-        <p className="text-sm font-medium text-foreground truncate">{program.name}</p>
-        <p className="text-xs text-muted-foreground truncate mt-0.5">{program.description}</p>
-      </div>
-      <div className="flex items-center gap-2 shrink-0 pr-3">
-        {count > 0 && (
-          <span className={cn("text-[10px] font-semibold px-1.5 py-0.5 rounded-md whitespace-nowrap", faculty.color, "bg-current/10")}>
-            {count} options
-          </span>
-        )}
-        <ChevronRight className="size-3.5 text-muted-foreground/20 group-hover:text-muted-foreground/60 transition-colors" />
-      </div>
+      {/* Degree badge */}
+      <span className={cn("inline-block text-[10px] font-bold font-mono px-2 py-0.5 rounded tracking-wide", colors.bg, colors.text)}>
+        {ab}
+      </span>
+
+      {/* Program name */}
+      <span className="text-xs font-medium text-foreground leading-snug line-clamp-2">{program.name}</span>
+
+      {/* Options count */}
+      {count > 0 && (
+        <span className="text-[10px] text-muted-foreground/60 mt-auto">
+          {count} options
+        </span>
+      )}
     </button>
   )
 }
