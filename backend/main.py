@@ -420,7 +420,8 @@ async def chat_endpoint(
 
     print(f"Searching database for: {user_query}")
 
-    course_matches = re.findall(r'([a-zA-Z]{4})\s*(\d{4})', user_query, re.IGNORECASE)
+    _TERM_WORDS = {"fall", "fall", "term", "year", "from", "this", "last", "next", "that", "what", "when", "with", "they", "them", "into", "will", "have", "been", "also", "than", "then", "each", "more", "does", "over", "just", "some", "only", "even", "such"}
+    course_matches = [(d, n) for d, n in re.findall(r'([a-zA-Z]{4})\s*(\d{4})', user_query, re.IGNORECASE) if d.lower() not in _TERM_WORDS]
 
     if course_matches and not file:
         responses = []
@@ -640,7 +641,9 @@ Do NOT ask for clarification when:
 - You already know the program from earlier in the conversation
 
 SCHEDULE QUESTIONS — IMPORTANT:
-When a student asks if a course is offered in a specific term and the context shows the course in a DIFFERENT term, do NOT say "outside of what I currently know." Instead say clearly: "[Course] is not offered in [requested term], but it IS offered in [terms shown in context]." Only say "outside of what I currently know" if the course appears nowhere in the schedule context at all.
+- If a student asks whether a course is offered in a specific term and the context shows that course in a DIFFERENT term, say: "[Course] is not offered in [requested term], but it IS offered in [terms from context]." Do NOT say "outside of what I currently know" in this case.
+- Only say "outside of what I currently know" if the course does not appear anywhere in the schedule context.
+- If the context contains schedule data for a course, always use it to answer — even if the term in the context differs from what was asked.
 
 CONTEXT:
 {context_text if context_text else "No context retrieved."}
@@ -742,7 +745,8 @@ async def chat_stream(
     ]
 
     async def generate():
-        course_matches = re.findall(r'([a-zA-Z]{4})\s*(\d{4})', user_query, re.IGNORECASE)
+        _TERM_WORDS = {"fall", "fall", "term", "year", "from", "this", "last", "next", "that", "what", "when", "with", "they", "them", "into", "will", "have", "been", "also", "than", "then", "each", "more", "does", "over", "just", "some", "only", "even", "such"}
+    course_matches = [(d, n) for d, n in re.findall(r'([a-zA-Z]{4})\s*(\d{4})', user_query, re.IGNORECASE) if d.lower() not in _TERM_WORDS]
 
         # Determine whether this is a question that mentions courses (needs AI answer)
         # or a pure course lookup (fast card path is sufficient)
@@ -815,7 +819,8 @@ async def chat_stream(
                 "open", "closed", "available", "offered", "offering",
                 "section", "crn", "waitlist", "full",
                 "who teaches", "who is teaching", "instructor", "professor",
-                "when is", "what time", "schedule",
+                "when is", "what time", "what day", "what days", "which day",
+                "schedule", "meets", "meeting",
                 "what semester", "what term", "which semester", "which term",
                 "fall 2026", "winter 2027", "summer 2026",
                 "f26", "w27", "su26",
@@ -920,7 +925,9 @@ Do NOT ask for clarification when:
 - You already know the program from earlier in the conversation
 
 SCHEDULE QUESTIONS — IMPORTANT:
-When a student asks if a course is offered in a specific term and the context shows the course in a DIFFERENT term, do NOT say "outside of what I currently know." Instead say clearly: "[Course] is not offered in [requested term], but it IS offered in [terms shown in context]." Only say "outside of what I currently know" if the course appears nowhere in the schedule context at all.
+- If a student asks whether a course is offered in a specific term and the context shows that course in a DIFFERENT term, say: "[Course] is not offered in [requested term], but it IS offered in [terms from context]." Do NOT say "outside of what I currently know" in this case.
+- Only say "outside of what I currently know" if the course does not appear anywhere in the schedule context.
+- If the context contains schedule data for a course, always use it to answer — even if the term in the context differs from what was asked.
 
 CONTEXT:
 {context_text if context_text else "No context retrieved."}"""
