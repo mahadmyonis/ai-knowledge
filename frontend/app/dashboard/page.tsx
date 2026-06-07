@@ -8,9 +8,18 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 interface IntentRow { intent: string; label: string; count: number; example: string; trend: "up" | "down" | "flat"; prev_count: number }
 interface UnansweredGroup { theme: string; count: number; examples: string[] }
 interface NegativeItem { question: string; answer: string; department: string }
+const TIMEFRAMES = [
+  { label: "Last week",    days: 7   },
+  { label: "Last 3 months", days: 90  },
+  { label: "Last 6 months", days: 180 },
+  { label: "Last year",    days: 365 },
+  { label: "All time",     days: 0   },
+]
+
 interface DashboardData {
   generated_at: string
-  week_start: string
+  days: number | null
+  window_start: string
   snapshot: {
     total_questions: number
     accuracy: number | null
@@ -33,11 +42,12 @@ export default function DashboardPage() {
   const [data, setData] = React.useState<DashboardData | null>(null)
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState("")
+  const [selectedDays, setSelectedDays] = React.useState(7)
 
-  const load = async () => {
+  const load = async (days: number = selectedDays) => {
     setLoading(true); setError("")
     try {
-      const res = await fetch(`${API_URL}/api/dashboard`)
+      const res = await fetch(`${API_URL}/api/dashboard?days=${days}`)
       const json = await res.json()
       if (!json.ok) { setError("Couldn't load dashboard data."); return }
       setData(json.data)
@@ -46,6 +56,11 @@ export default function DashboardPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleTimeframe = (days: number) => {
+    setSelectedDays(days)
+    load(days)
   }
 
   React.useEffect(() => { load() }, [])
@@ -85,19 +100,36 @@ export default function DashboardPage() {
       <div className="max-w-4xl mx-auto px-5 py-10">
 
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-start justify-between mb-6">
           <div>
             <h1 className="text-xl font-bold tracking-tight">CampusQ — Advisor Dashboard</h1>
             <p className="text-sm text-zinc-500 mt-0.5">
-              Anonymized · week of {new Date(data.week_start).toLocaleDateString("en-CA", { month: "long", day: "numeric" })}
+              Anonymized · {selectedDays === 0 ? "all time" : `last ${selectedDays} days`}
             </p>
           </div>
           <button
-            onClick={load}
-            className="inline-flex items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-900 transition-colors"
+            onClick={() => load()}
+            className="inline-flex items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-900 transition-colors mt-1"
           >
             <RefreshCw className={`size-3.5 ${loading ? "animate-spin" : ""}`} /> Refresh
           </button>
+        </div>
+
+        {/* Timeframe selector */}
+        <div className="flex flex-wrap gap-2 mb-8">
+          {TIMEFRAMES.map((tf) => (
+            <button
+              key={tf.days}
+              onClick={() => handleTimeframe(tf.days)}
+              className={`px-3.5 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                selectedDays === tf.days
+                  ? "bg-zinc-900 text-white border-zinc-900"
+                  : "bg-white text-zinc-500 border-zinc-200 hover:border-zinc-400 hover:text-zinc-900"
+              }`}
+            >
+              {tf.label}
+            </button>
+          ))}
         </div>
 
         {/* Section 1 — Snapshot */}
