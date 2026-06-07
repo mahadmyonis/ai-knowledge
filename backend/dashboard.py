@@ -210,15 +210,15 @@ def build_dashboard_data(log_dir: str, days: int | None = 7) -> dict:
     session_counts = [len(s) for s in user_sessions.values()]
     avg_sessions = round(sum(session_counts) / len(session_counts), 1) if session_counts else 0
 
-    # Daily usage trend — use the selected window (this_week queries)
-    daily_counts: dict[str, int] = Counter()
+    # Hourly usage — what hour of day do students ask questions?
+    hourly_counts: dict[int, int] = Counter()
     for q in this_week:
         dt = _parse_ts(q)
         if dt:
-            daily_counts[dt.strftime("%Y-%m-%d")] += 1
-    daily_trend = [
-        {"date": d, "queries": daily_counts.get(d, 0)}
-        for d in sorted(daily_counts.keys())
+            hourly_counts[dt.hour] += 1
+    hourly_trend = [
+        {"hour": h, "queries": hourly_counts.get(h, 0)}
+        for h in range(24)
     ]
 
     return {
@@ -232,7 +232,7 @@ def build_dashboard_data(log_dir: str, days: int | None = 7) -> dict:
             "thumbs_down": downs,
             "top_department": top_department,
         },
-        "daily_trend": daily_trend,
+        "hourly_trend": hourly_trend,
         "retention": {
             "total_users": total_users,
             "returned_day2": returned_users,
