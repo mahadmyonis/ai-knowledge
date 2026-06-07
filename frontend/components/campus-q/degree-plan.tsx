@@ -11,6 +11,8 @@ import ReactFlow, {
   Position,
   useNodesState,
   useEdgesState,
+  useReactFlow,
+  ReactFlowProvider,
 } from "reactflow"
 import "reactflow/dist/style.css"
 import dagre from "@dagrejs/dagre"
@@ -108,50 +110,32 @@ function computeStatuses(
   return out
 }
 
-// ── Main component ─────────────────────────────────────────────────────────────
-export function DegreePlan({
-  slug,
-  variant,
+// ── Inner graph (needs ReactFlowProvider context) ─────────────────────────────
+function DegreePlanGraph({
+  courses,
+  rawEdges,
+  completed,
+  onToggle,
 }: {
-  slug: string
-  variant: string
+  courses: CourseNode[]
+  rawEdges: CourseEdge[]
+  completed: Set<string>
+  onToggle: (code: string) => void
 }) {
-  const [courses, setCourses]     = React.useState<CourseNode[]>([])
-  const [rawEdges, setRawEdges]   = React.useState<CourseEdge[]>([])
-  const [loading, setLoading]     = React.useState(false)
-  const [error, setError]         = React.useState("")
-  const [completed, setCompleted] = React.useState<Set<string>>(new Set())
-
+  const { fitView } = useReactFlow()
   const [nodes, setNodes, onNodesChange] = useNodesState([])
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
 
-  // Load plan from backend
-  React.useEffect(() => {
-    if (!slug || !variant) return
-    setLoading(true)
-    setError("")
-    fetch(`${API_URL}/api/degree-plan?slug=${encodeURIComponent(slug)}&variant=${encodeURIComponent(variant)}`)
-      .then((r) => r.json())
-      .then((d) => {
-        setCourses(d.courses || [])
-        setRawEdges(d.edges || [])
-        setCompleted(loadCompleted(slug, variant))
-      })
-      .catch(() => setError("Failed to load plan. Make sure the backend is running."))
-      .finally(() => setLoading(false))
-  }, [slug, variant])
-
-  // Rebuild graph whenever courses, edges, or completed changes
   React.useEffect(() => {
     if (!courses.length) return
+
     const statuses = computeStatuses(courses, rawEdges, completed)
 
     const rfEdges: Edge[] = rawEdges.map((e) => ({
-      id: `${e.source}-${e.target}`,
+      id: `${e.source}->${e.target}`,
       source: e.source,
       target: e.target,
-      style: { stroke: "hsl(var(--border))", strokeWidth: 1.5 },
-      animated: false,
+      style: { stroke: "oklch(70% 0 0)", strokeWidth: 1.5 },
     }))
 
     const rfNodes: Node[] = courses.map((c) => ({
@@ -163,14 +147,60 @@ export function DegreePlan({
         name: c.name,
         credits: c.credits,
         status: statuses[c.code],
-        onToggle: () => toggleCourse(c.code),
+        onToggle: () => onToggle(c.code),
       },
     }))
 
     const laid = applyDagreLayout(rfNodes, rfEdges)
     setNodes(laid)
     setEdges(rfEdges)
+    // fitView after layout is applied
+    setTimeout(() => fitView({ padding: 0.15, duration: 200 }), 50)
   }, [courses, rawEdges, completed])
+
+  return (
+    <ReactFlow
+      nodes={nodes}
+      edges={edges}
+      onNodesChange={onNodesChange}
+      onEdgesChange={onEdgesChange}
+      nodeTypes={nodeTypes}
+      nodesDraggable={false}
+      nodesConnectable={false}
+      elementsSelectable={false}
+      proOptions={{ hideAttribution: true }}
+      minZoom={0.2}
+    >
+      <Background color="oklch(87% 0.004 85)" gap={20} size={1} />
+      <Controls showInteractive={false} />
+    </ReactFlow>
+  )
+}
+
+// ── Main component ─────────────────────────────────────────────────────────────
+export function DegreePlan({ slug, variant }: { slug: string; variant: string }) {
+  const [courses, setCourses]     = React.useState<CourseNode[]>([])
+  const [rawEdges, setRawEdges]   = React.useState<CourseEdge[]>([])
+  const [loading, setLoading]     = React.useState(false)
+  const [error, setError]         = React.useState("")
+  const [completed, setCompleted] = React.useState<Set<string>>(new Set())
+
+  React.useEffect(() => {
+    if (!slug || !variant) return
+    setLoading(true)
+    setError("")
+    setCourses([])
+    setRawEdges([])
+    fetch(`${API_URL}/api/degree-plan?slug=${encodeURIComponent(slug)}&variant=${encodeURIComponent(variant)}`)
+      .then((r) => r.json())
+      .then((d) => {
+        setCourses(d.courses || [])
+        setRawEdges(d.edges || [])
+        setCompleted(loadCompleted(slug, variant))
+      })
+      .catch(() => setError("Failed to load plan. Make sure the backend is running."))
+      .finally(() => setLoading(false))
+  }, [slug, variant])
 
   const toggleCourse = React.useCallback((code: string) => {
     setCompleted((prev) => {
@@ -202,32 +232,29 @@ export function DegreePlan({
 
   if (!courses.length) return (
     <div className="text-center py-12 text-sm text-muted-foreground">
-      Select a program and variant to see your plan.
+      No course data found for this program variant.
     </div>
   )
 
   return (
-    <div className="flex flex-col gap-3 h-full">
-      {/* Header */}
+    <div className="flex flex-col gap-3">
+      {/* Legend + count */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <span className="size-2.5 rounded-full bg-emerald-500 inline-block" /> Completed
-          </div>
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <span className="size-2.5 rounded-full bg-primary/40 inline-block" /> Can take now
-          </div>
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <span className="size-2.5 rounded-full bg-border inline-block" /> Locked
-          </div>
+          </span>
+          <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <span className="size-2.5 rounded-full bg-primary/30 border border-primary inline-block" /> Can take now
+          </span>
+          <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <span className="size-2.5 rounded-full bg-secondary border border-border inline-block" /> Locked
+          </span>
         </div>
         <div className="flex items-center gap-3">
           <span className="text-xs text-muted-foreground">{doneCount}/{totalCount} done</span>
           {doneCount > 0 && (
-            <button
-              onClick={resetPlan}
-              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-            >
+            <button onClick={resetPlan} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
               <RotateCcw className="size-3" /> Reset
             </button>
           )}
@@ -242,28 +269,20 @@ export function DegreePlan({
         />
       </div>
 
-      {/* Graph */}
-      <div className="flex-1 rounded-xl border border-border overflow-hidden" style={{ minHeight: 480 }}>
-        <ReactFlow
-          nodes={nodes}
-          edges={edges}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          nodeTypes={nodeTypes}
-          fitView
-          fitViewOptions={{ padding: 0.2 }}
-          nodesDraggable={false}
-          nodesConnectable={false}
-          elementsSelectable={false}
-          proOptions={{ hideAttribution: true }}
-        >
-          <Background color="hsl(var(--border))" gap={20} size={1} />
-          <Controls showInteractive={false} />
-        </ReactFlow>
+      {/* Graph — explicit pixel height so ReactFlow can measure */}
+      <div className="rounded-xl border border-border overflow-hidden" style={{ height: 520 }}>
+        <ReactFlowProvider>
+          <DegreePlanGraph
+            courses={courses}
+            rawEdges={rawEdges}
+            completed={completed}
+            onToggle={toggleCourse}
+          />
+        </ReactFlowProvider>
       </div>
 
       <p className="text-[10px] text-muted-foreground/50 text-center">
-        Click any course to mark it complete. Progress is saved automatically.
+        Click any course to mark it complete · progress saved automatically
       </p>
     </div>
   )
