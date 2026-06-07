@@ -86,19 +86,28 @@ def _intent_of(row: dict) -> str:
 
 
 # ── Main aggregation ───────────────────────────────────────────────────────────
-def build_dashboard_data(log_dir: str) -> dict:
+def build_dashboard_data(log_dir: str, days: int | None = 7) -> dict:
+    """
+    days=None means all-time. Otherwise the window is the last N days.
+    The comparison window is always the same length immediately before.
+    """
     now = datetime.utcnow()
-    week_start = now - timedelta(days=7)
-    prev_start = now - timedelta(days=14)
+    if days is None:
+        # All-time: window starts at epoch
+        window_start = datetime(2000, 1, 1)
+        prev_start = datetime(2000, 1, 1)  # no meaningful comparison
+    else:
+        window_start = now - timedelta(days=days)
+        prev_start = now - timedelta(days=days * 2)
 
     queries = _read_jsonl(os.path.join(log_dir, "queries.log"))
     feedback = _read_jsonl(os.path.join(log_dir, "feedback.log"))
     no_ctx = _read_jsonl(os.path.join(log_dir, "no_context.log"))
 
-    this_week = [q for q in queries if _in_window(q, week_start, now)]
-    last_week = [q for q in queries if _in_window(q, prev_start, week_start)]
-    fb_week = [f for f in feedback if _in_window(f, week_start, now)]
-    noctx_week = [n for n in no_ctx if _in_window(n, week_start, now)]
+    this_week = [q for q in queries if _in_window(q, window_start, now)]
+    last_week = [q for q in queries if _in_window(q, prev_start, window_start)]
+    fb_week = [f for f in feedback if _in_window(f, window_start, now)]
+    noctx_week = [n for n in no_ctx if _in_window(n, window_start, now)]
 
     # ── Section 1: snapshot ──
     total = len(this_week)
@@ -199,7 +208,8 @@ def build_dashboard_data(log_dir: str) -> dict:
 
     return {
         "generated_at": now.isoformat(),
-        "week_start": week_start.isoformat(),
+        "days": days,
+        "window_start": window_start.isoformat(),
         "snapshot": {
             "total_questions": total,
             "accuracy": accuracy,           # null if no feedback yet
