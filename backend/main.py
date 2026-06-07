@@ -616,9 +616,13 @@ async def chat_endpoint(
                 "sources": [],
             }
 
+        from datetime import date as _date
+        _today = _date.today().strftime("%B %d, %Y")
         system_prompt = f"""You are CampusQ, an AI assistant for Carleton University students. You answer questions about courses, programs, prerequisites, regulations, and academic life using the Carleton Academic Calendar.
 
 You are independent — not officially affiliated with Carleton University.
+
+Today's date is {_today}. Use this to answer questions about upcoming deadlines, current term, or time-sensitive information.
 
 RULES:
 1. Answer from the CONTEXT below. It is your source of truth.
@@ -900,9 +904,13 @@ async def chat_stream(
             if not context_text:
                 log_no_context(user_query, "stream_rag")
 
-            system_prompt = f"""You are CampusQ, an AI assistant for Carleton University students. You answer questions about courses, programs, prerequisites, regulations, and academic life using the Carleton Academic Calendar.
+            from datetime import date as _date
+        _today = _date.today().strftime("%B %d, %Y")
+        system_prompt = f"""You are CampusQ, an AI assistant for Carleton University students. You answer questions about courses, programs, prerequisites, regulations, and academic life using the Carleton Academic Calendar.
 
 You are independent — not officially affiliated with Carleton University.
+
+Today's date is {_today}. Use this to answer questions about upcoming deadlines, current term, or time-sensitive information.
 
 RULES:
 1. Answer from the CONTEXT below. It is your source of truth.
