@@ -82,26 +82,26 @@ function HourlyChart({ data }: { data: HourlyPoint[] }) {
         ))}
       </div>
       {/* X axis labels */}
-      <div className="flex mt-1.5">
+      <div className="flex mt-2">
         {data.map((d) => (
           <div key={d.hour} className="flex-1 text-center">
             {showLabel(d.hour) && (
-              <span className="text-[8px] text-stone-400">{formatHour(d.hour)}</span>
+              <span className="text-[11px] text-stone-500 font-medium">{formatHour(d.hour)}</span>
             )}
           </div>
         ))}
       </div>
       {/* Legend */}
-      <div className="flex items-center gap-3 mt-2 flex-wrap">
+      <div className="flex items-center gap-4 mt-2.5 flex-wrap">
         {[
           { color: "bg-amber-300", label: "Early morning" },
           { color: "bg-amber-400", label: "Office hours" },
           { color: "bg-orange-400", label: "Evening" },
           { color: "bg-indigo-400", label: "Late night" },
         ].map((l) => (
-          <div key={l.label} className="flex items-center gap-1">
+          <div key={l.label} className="flex items-center gap-1.5">
             <div className={`size-2 rounded-sm ${l.color}`} />
-            <span className="text-[9px] text-stone-400">{l.label}</span>
+            <span className="text-[11px] text-stone-500">{l.label}</span>
           </div>
         ))}
       </div>
