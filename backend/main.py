@@ -490,9 +490,22 @@ async def chat_endpoint(
         top_k_other = 5 if is_program_query else 8
         keep_total = 30 if is_program_query else 10
 
+        _q_lower = user_query.lower()
+        is_schedule_query = any(kw in _q_lower for kw in [
+            "open", "closed", "available", "offered", "offering",
+            "section", "crn", "waitlist", "full",
+            "who teaches", "who is teaching", "instructor",
+            "when is", "what time", "schedule",
+            "fall 2026", "winter 2027", "summer 2026",
+            "f26", "w27", "su26",
+        ])
+
         all_matches = []
-        for ns in ["courses", "programs", "regulations", "registrar", "services", "dates", "tuition", "library", "facts", "engineering-electives"]:
+        for ns in ["courses", "programs", "regulations", "registrar", "services", "dates", "tuition", "library", "facts", "schedule"]:
             top_k = top_k_programs if ns == "programs" else top_k_other
+            # Pull more schedule results when query is clearly schedule-related
+            if ns == "schedule" and is_schedule_query:
+                top_k = max(top_k, 15)
             ns_results = index.query(
                 vector=query_embedding,
                 top_k=top_k,
@@ -500,6 +513,10 @@ async def chat_endpoint(
                 namespace=ns,
             )
             if ns_results.matches:
+                for m in ns_results.matches:
+                    # Boost schedule namespace scores so they surface above course catalog entries
+                    if ns == "schedule" and is_schedule_query:
+                        m.score = min(1.0, m.score + 0.25)
                 all_matches.extend(ns_results.matches)
 
         all_matches.sort(key=lambda m: m.score, reverse=True)
@@ -729,9 +746,21 @@ async def chat_stream(
             top_k_other = 5 if is_program_query else 8
             keep_total = 30 if is_program_query else 10
 
+            _q_lower = user_query.lower()
+            is_schedule_query = any(kw in _q_lower for kw in [
+                "open", "closed", "available", "offered", "offering",
+                "section", "crn", "waitlist", "full",
+                "who teaches", "who is teaching", "instructor",
+                "when is", "what time", "schedule",
+                "fall 2026", "winter 2027", "summer 2026",
+                "f26", "w27", "su26",
+            ])
+
             all_matches = []
-            for ns in ["courses", "programs", "regulations", "registrar", "services", "dates", "tuition", "library", "facts", "engineering-electives"]:
+            for ns in ["courses", "programs", "regulations", "registrar", "services", "dates", "tuition", "library", "facts", "schedule"]:
                 top_k = top_k_programs if ns == "programs" else top_k_other
+                if ns == "schedule" and is_schedule_query:
+                    top_k = max(top_k, 15)
                 ns_results = index.query(
                     vector=query_embedding,
                     top_k=top_k,
@@ -739,6 +768,9 @@ async def chat_stream(
                     namespace=ns,
                 )
                 if ns_results.matches:
+                    for m in ns_results.matches:
+                        if ns == "schedule" and is_schedule_query:
+                            m.score = min(1.0, m.score + 0.25)
                     all_matches.extend(ns_results.matches)
 
             all_matches.sort(key=lambda m: m.score, reverse=True)

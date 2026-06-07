@@ -48,7 +48,15 @@ const FACULTIES: {
       },
       { name: "Architectural Conservation and Sustainability Engineering", description: "Heritage structures, sustainability, and building technology" },
       { name: "Architecture", description: "Architectural design, history, and building technology" },
-      { name: "Architectural Studies", description: "Design, urbanism, and conservation — B.A.S. streams" },
+      {
+        name: "Architectural Studies",
+        description: "Design, urbanism, and conservation — B.A.S.",
+        streams: [
+          { label: "Design — B.A.S. Honours", queryName: "Design B.A.S. Honours" },
+          { label: "Urbanism — B.A.S. Honours", queryName: "Urbanism B.A.S. Honours" },
+          { label: "Conservation and Sustainability — B.A.S. Honours", queryName: "Conservation and Sustainability B.A.S. Honours" },
+        ],
+      },
       { name: "Biomedical and Electrical Engineering", description: "Engineering applied to medicine — electrical focus" },
       { name: "Biomedical and Mechanical Engineering", description: "Engineering applied to medicine — mechanical focus" },
       { name: "Civil Engineering", description: "Structures, infrastructure, and environmental systems" },
