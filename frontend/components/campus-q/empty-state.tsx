@@ -1,6 +1,6 @@
 "use client"
 
-import { BarChart2, BookOpen, Calculator, CalendarDays } from "lucide-react"
+import { BarChart2, BookOpen, Calculator, CalendarDays, GitBranch, ShieldAlert, GraduationCap, Lightbulb } from "lucide-react"
 import { useCampus, campusThemes } from "./campus-context"
 import { cn } from "@/lib/utils"
 
@@ -10,10 +10,26 @@ interface EmptyStateProps {
 }
 
 const QUICK_ASKS = [
-  "What's the difference between software eng and CS at Carleton?",
-  "Can I take COMP 3000 without COMP 2401?",
-  "What happens if I fail a required course twice?",
-  "Is COMP 1405 or COMP 1005 better to start with?",
+  {
+    icon: GitBranch,
+    label: "Compare programs",
+    question: "What's the difference between software eng and CS at Carleton?",
+  },
+  {
+    icon: ShieldAlert,
+    label: "Check prereqs",
+    question: "Can I take COMP 3000 without COMP 2401?",
+  },
+  {
+    icon: GraduationCap,
+    label: "Academic rules",
+    question: "What happens if I fail a required course twice?",
+  },
+  {
+    icon: Lightbulb,
+    label: "Course advice",
+    question: "Is COMP 1405 or COMP 1005 better to start with?",
+  },
 ]
 
 export function EmptyState({ onSuggestionClick, onViewChange }: EmptyStateProps) {
@@ -92,18 +108,24 @@ export function EmptyState({ onSuggestionClick, onViewChange }: EmptyStateProps)
       </div>
 
       {/* Quick asks */}
-      <div className="flex flex-col items-center gap-2.5 w-full max-w-lg">
+      <div className="flex flex-col items-center gap-3 w-full max-w-2xl">
         <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/40">
           Try asking
         </p>
-        <div className="flex flex-wrap justify-center gap-2">
-          {QUICK_ASKS.map((q) => (
+        <div className="grid grid-cols-2 gap-2.5 w-full">
+          {QUICK_ASKS.map(({ icon: Icon, label, question }) => (
             <button
-              key={q}
-              onClick={() => onSuggestionClick(q)}
-              className="px-3.5 py-1.5 rounded-full text-xs border border-border bg-card text-muted-foreground hover:text-foreground hover:border-foreground/20 hover:shadow-sm transition-all duration-150"
+              key={label}
+              onClick={() => onSuggestionClick(question)}
+              className="flex items-center gap-3 px-4 py-3 rounded-xl border border-border bg-card hover:bg-secondary/40 hover:border-border/80 transition-all duration-150 text-left group"
             >
-              {q}
+              <div className={cn("size-7 rounded-lg flex items-center justify-center shrink-0 bg-secondary group-hover:bg-secondary/80 transition-colors")}>
+                <Icon className="size-3.5 text-muted-foreground" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-semibold text-foreground">{label}</p>
+                <p className="text-[11px] text-muted-foreground truncate mt-0.5">{question}</p>
+              </div>
             </button>
           ))}
         </div>
