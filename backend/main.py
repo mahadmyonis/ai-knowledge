@@ -171,7 +171,7 @@ def rewrite_query_for_embedding(user_query: str) -> str:
         return user_query
     try:
         rewrite_response = openai_client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-4o",
             messages=[
                 {
                     "role": "system",
@@ -737,7 +737,7 @@ STUDENT-UPLOADED DOCUMENT:
         api_messages.append({"role": "user", "content": user_query})
 
         response = openai_client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-4o",
             messages=api_messages,
             temperature=0.4,
         )
@@ -989,7 +989,7 @@ CONTEXT:
             api_messages.append({"role": "user", "content": user_query})
 
             stream = await async_openai_client.chat.completions.create(
-                model="gpt-4o-mini",
+                model="gpt-4o",
                 messages=api_messages,
                 temperature=0.4,
                 stream=True,
