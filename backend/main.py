@@ -585,12 +585,19 @@ async def chat_endpoint(
             "fall 2026", "winter 2027", "summer 2026",
             "f26", "w27", "su26",
         ])
+        is_deadline_query = any(kw in _q_lower for kw in [
+            "last day", "deadline", "when is", "when does", "when do", "due date",
+            "withdraw", "withdrawal", "add", "drop", "refund", "payment",
+            "registration", "exam", "exams", "begin", "start", "end", "term begins",
+            "time ticket", "reading week", "break", "holiday", "closed",
+        ])
 
         all_matches = []
         for ns in ["courses", "programs", "regulations", "registrar", "services", "dates", "tuition", "library", "facts", "schedule"]:
             top_k = top_k_programs if ns == "programs" else top_k_other
-            # Pull more schedule results when query is clearly schedule-related
             if ns == "schedule" and is_schedule_query:
+                top_k = max(top_k, 15)
+            if ns == "dates" and is_deadline_query:
                 top_k = max(top_k, 15)
             ns_results = index.query(
                 vector=query_embedding,
@@ -600,8 +607,9 @@ async def chat_endpoint(
             )
             if ns_results.matches:
                 for m in ns_results.matches:
-                    # Boost schedule namespace scores so they surface above course catalog entries
                     if ns == "schedule" and is_schedule_query:
+                        m.score = min(1.0, m.score + 0.25)
+                    if ns == "dates" and is_deadline_query:
                         m.score = min(1.0, m.score + 0.25)
                 all_matches.extend(ns_results.matches)
 
@@ -872,11 +880,19 @@ async def chat_stream(
                 "fall 2026", "winter 2027", "summer 2026",
                 "f26", "w27", "su26",
             ])
+            is_deadline_query = any(kw in _q_lower for kw in [
+                "last day", "deadline", "when is", "when does", "when do", "due date",
+                "withdraw", "withdrawal", "add", "drop", "refund", "payment",
+                "registration", "exam", "exams", "begin", "start", "end", "term begins",
+                "time ticket", "reading week", "break", "holiday", "closed",
+            ])
 
             all_matches = []
             for ns in ["courses", "programs", "regulations", "registrar", "services", "dates", "tuition", "library", "facts", "schedule"]:
                 top_k = top_k_programs if ns == "programs" else top_k_other
                 if ns == "schedule" and is_schedule_query:
+                    top_k = max(top_k, 15)
+                if ns == "dates" and is_deadline_query:
                     top_k = max(top_k, 15)
                 ns_results = index.query(
                     vector=query_embedding,
@@ -887,6 +903,8 @@ async def chat_stream(
                 if ns_results.matches:
                     for m in ns_results.matches:
                         if ns == "schedule" and is_schedule_query:
+                            m.score = min(1.0, m.score + 0.25)
+                        if ns == "dates" and is_deadline_query:
                             m.score = min(1.0, m.score + 0.25)
                     all_matches.extend(ns_results.matches)
 
