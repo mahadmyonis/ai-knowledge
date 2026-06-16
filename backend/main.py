@@ -1066,6 +1066,22 @@ async def feedback_endpoint(
     return {"ok": True}
 
 
+@app.post("/api/waitlist")
+async def waitlist_endpoint(
+    email: str = Form(...),
+    school: str = Form(...),
+):
+    email = email.strip().lower()
+    if "@" not in email or "." not in email.split("@")[-1]:
+        return {"ok": False, "error": "invalid email"}
+    _log("waitlist.log", {
+        "ts": datetime.utcnow().isoformat(),
+        "email": email,
+        "school": school,
+    })
+    return {"ok": True}
+
+
 # ── Advisor Dashboard (read-only, anonymized — open access) ───────────────────
 from dashboard import build_dashboard_data, build_digest_text
 
