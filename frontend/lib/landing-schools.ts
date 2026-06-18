@@ -1,10 +1,9 @@
-export type SchoolId = "carleton" | "uottawa" | "mcgill"
+export type SchoolId = "carleton" | "uottawa" | "uoft" | "waterloo" | "western"
 
 export interface SchoolConfig {
   id: SchoolId
   name: string
   shortName: string
-  path: string
   live: boolean
   accent: string
   accentHover: string
@@ -20,13 +19,12 @@ export const SCHOOLS: Record<SchoolId, SchoolConfig> = {
     id: "carleton",
     name: "Carleton University",
     shortName: "Carleton",
-    path: "/",
     live: true,
     accent: "bg-red-600",
     accentHover: "hover:bg-red-700",
     accentText: "text-red-600",
     accentBg: "bg-red-50",
-    badge: "Built for Carleton students",
+    badge: "Live for Carleton students",
     demoMessages: [
       { role: "user", text: "Can I take COMP 2401 without finishing COMP 1405?" },
       { role: "assistant", text: "No — COMP 2401 requires either COMP 1405 or COMP 1406 as a prerequisite. You'll need to complete one of those first before registering." },
@@ -44,7 +42,6 @@ export const SCHOOLS: Record<SchoolId, SchoolConfig> = {
     id: "uottawa",
     name: "University of Ottawa",
     shortName: "uOttawa",
-    path: "/uottawa",
     live: false,
     accent: "bg-rose-700",
     accentHover: "hover:bg-rose-800",
@@ -57,20 +54,51 @@ export const SCHOOLS: Record<SchoolId, SchoolConfig> = {
     ],
     stats: [],
   },
-  mcgill: {
-    id: "mcgill",
-    name: "McGill University",
-    shortName: "McGill",
-    path: "/mcgill",
+  uoft: {
+    id: "uoft",
+    name: "University of Toronto",
+    shortName: "UofT",
     live: false,
-    accent: "bg-red-800",
-    accentHover: "hover:bg-red-900",
-    accentText: "text-red-800",
-    accentBg: "bg-red-50",
-    badge: "Coming soon for McGill students",
+    accent: "bg-blue-900",
+    accentHover: "hover:bg-blue-800",
+    accentText: "text-blue-900",
+    accentBg: "bg-blue-50",
+    badge: "Coming soon for UofT students",
     demoMessages: [
-      { role: "user", text: "What's the prerequisite for COMP 250?" },
-      { role: "assistant", text: "McGill's course catalog isn't indexed yet — join the waitlist to get notified when it's ready." },
+      { role: "user", text: "What are the prereqs for CSC236?" },
+      { role: "assistant", text: "UofT's course catalog isn't indexed yet — join the waitlist to get notified when it's ready." },
+    ],
+    stats: [],
+  },
+  waterloo: {
+    id: "waterloo",
+    name: "University of Waterloo",
+    shortName: "Waterloo",
+    live: false,
+    accent: "bg-amber-500",
+    accentHover: "hover:bg-amber-600",
+    accentText: "text-amber-600",
+    accentBg: "bg-amber-50",
+    badge: "Coming soon for Waterloo students",
+    demoMessages: [
+      { role: "user", text: "Is CS 135 a prereq for CS 136?" },
+      { role: "assistant", text: "Waterloo's course catalog isn't indexed yet — join the waitlist to get notified when it's ready." },
+    ],
+    stats: [],
+  },
+  western: {
+    id: "western",
+    name: "Western University",
+    shortName: "Western",
+    live: false,
+    accent: "bg-purple-700",
+    accentHover: "hover:bg-purple-800",
+    accentText: "text-purple-700",
+    accentBg: "bg-purple-50",
+    badge: "Coming soon for Western students",
+    demoMessages: [
+      { role: "user", text: "What are the prerequisites for CS 2210?" },
+      { role: "assistant", text: "Western's course catalog isn't indexed yet — join the waitlist to get notified when it's ready." },
     ],
     stats: [],
   },

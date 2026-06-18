@@ -1,14 +1,21 @@
-import Link from "next/link"
+"use client"
+
 import { SCHOOL_LIST, type SchoolId } from "@/lib/landing-schools"
 
-export function UniversityToggle({ activeId }: { activeId: SchoolId }) {
+export function UniversityToggle({
+  activeId,
+  onSelect,
+}: {
+  activeId: SchoolId
+  onSelect: (id: SchoolId) => void
+}) {
   return (
-    <div className="inline-flex items-center gap-1 p-1 rounded-full border border-zinc-200 bg-zinc-50">
+    <div className="inline-flex flex-wrap items-center gap-1 p-1 rounded-full border border-zinc-200 bg-zinc-50">
       {SCHOOL_LIST.map((s) => (
-        <Link
+        <button
           key={s.id}
-          href={s.path}
-          className={`relative text-xs font-medium px-3.5 py-1.5 rounded-full transition-colors ${
+          onClick={() => onSelect(s.id)}
+          className={`relative text-xs font-medium px-3.5 py-1.5 rounded-full transition-all duration-200 ${
             activeId === s.id
               ? `${s.accent} text-white shadow-sm`
               : "text-zinc-500 hover:text-zinc-800"
@@ -16,11 +23,11 @@ export function UniversityToggle({ activeId }: { activeId: SchoolId }) {
         >
           {s.shortName}
           {!s.live && (
-            <span className="ml-1 text-[9px] uppercase tracking-wide text-zinc-300">
+            <span className="ml-1 text-[9px] uppercase tracking-wide opacity-50">
               soon
             </span>
           )}
-        </Link>
+        </button>
       ))}
     </div>
   )
