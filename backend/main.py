@@ -17,6 +17,13 @@ from openai import OpenAI, AsyncOpenAI
 from dotenv import load_dotenv
 import fitz  # PyMuPDF
 
+from citations import (
+    build_context_and_citations,
+    citation_from_course,
+    dedupe_citations,
+    should_emit_citations,
+)
+
 load_dotenv()
 
 app = FastAPI()
@@ -643,7 +650,7 @@ async def chat_endpoint(
             "time ticket", "reading week", "break", "holiday", "closed",
         ])
 
-        all_matches = []
+        all_matches: list[tuple] = []
         for ns in ["courses", "programs", "regulations", "registrar", "services", "dates", "tuition", "library", "facts", "schedule"]:
             top_k = top_k_programs if ns == "programs" else top_k_other
             if ns == "schedule" and is_schedule_query:
@@ -662,13 +669,13 @@ async def chat_endpoint(
                         m.score = min(1.0, m.score + 0.25)
                     if ns == "dates" and is_deadline_query:
                         m.score = min(1.0, m.score + 0.25)
-                all_matches.extend(ns_results.matches)
+                all_matches.extend((m, ns) for m in ns_results.matches)
 
         # Metadata-filtered schedule fetch: for schedule queries mentioning a course code,
         # query the schedule namespace filtered by course_code to get all terms it exists in.
         # This avoids hardcoding term slugs and works regardless of what terms are loaded.
         if is_schedule_query and course_matches:
-            _existing_ids = {m.id for m in all_matches}
+            _existing_ids = {m.id for m, _ in all_matches}
             for dept, num in course_matches:
                 _code = f"{dept.upper()} {num}"
                 try:
@@ -687,40 +694,19 @@ async def chat_endpoint(
                                     self.id = src.id
                                     self.score = 0.85
                                     self.metadata = src.metadata
-                            all_matches.append(_SM(m))
+                            all_matches.append((_SM(m), "schedule"))
                             _existing_ids.add(m.id)
                 except Exception as e:
                     print(f"Schedule filter error: {e}")
 
-        all_matches.sort(key=lambda m: m.score, reverse=True)
+        all_matches.sort(key=lambda item: item[0].score, reverse=True)
         all_matches = all_matches[:keep_total]
 
-        context_text = ""
-        sources = []
-        seen_urls = set()
-        chunks_used = 0
+        context_text, sources, chunks_used = build_context_and_citations(
+            all_matches, is_program_query, SIMILARITY_THRESHOLD
+        )
 
-        for match in all_matches:
-            # For program queries: include all program chunks regardless of score
-            # (years 3-4 chunks often score lower but are still needed for full context)
-            is_program_chunk = "program" in match.metadata or "section" in match.metadata
-            if not is_program_query or not is_program_chunk:
-                if match.score < SIMILARITY_THRESHOLD:
-                    continue
-            metadata = match.metadata
-            doc_text = metadata.get("text", "")
-            doc_source = metadata.get("source", "Unknown Source")
-            context_text += f"\n--- Source: {doc_source} (relevance: {match.score:.2f}) ---\n{doc_text}\n"
-            chunks_used += 1
-            if doc_source not in seen_urls:
-                seen_urls.add(doc_source)
-                sources.append({
-                    "doc": doc_source,
-                    "section": "Carleton Academic Calendar",
-                    "snippet": doc_text[:150] + "...",
-                })
-
-        top_score = all_matches[0].score if all_matches else None
+        top_score = all_matches[0][0].score if all_matches else None
         print(f"RAG: {chunks_used} chunks passed threshold {SIMILARITY_THRESHOLD}")
 
         if not context_text and not attachment_text:
@@ -758,11 +744,15 @@ async def chat_endpoint(
             temperature=0.4,
         )
 
+        answer = response.choices[0].message.content
+        if not should_emit_citations(answer, chunks_used):
+            sources = []
+
         if file:
             sources.append({
-                "doc": file.filename,
+                "url": file.filename,
+                "title": file.filename,
                 "section": "Student-Uploaded Document",
-                "snippet": "File uploaded directly to this conversation.",
             })
 
         ms = int((time.time() - t_start) * 1000)
@@ -776,7 +766,7 @@ async def chat_endpoint(
             had_context=True,
             user_id=user_id,
         )
-        return {"answer": response.choices[0].message.content, "sources": sources}
+        return {"answer": answer, "sources": sources}
 
     except Exception as e:
         ms = int((time.time() - t_start) * 1000)
@@ -895,7 +885,7 @@ async def chat_stream(
                 "time ticket", "reading week", "break", "holiday", "closed",
             ])
 
-            all_matches = []
+            all_matches: list[tuple] = []
             for ns in ["courses", "programs", "regulations", "registrar", "services", "dates", "tuition", "library", "facts", "schedule"]:
                 top_k = top_k_programs if ns == "programs" else top_k_other
                 if ns == "schedule" and is_schedule_query:
@@ -914,11 +904,11 @@ async def chat_stream(
                             m.score = min(1.0, m.score + 0.25)
                         if ns == "dates" and is_deadline_query:
                             m.score = min(1.0, m.score + 0.25)
-                    all_matches.extend(ns_results.matches)
+                    all_matches.extend((m, ns) for m in ns_results.matches)
 
             # Metadata-filtered schedule fetch: find this course in all terms it exists in.
             if is_schedule_query and course_matches:
-                _existing_ids = {m.id for m in all_matches}
+                _existing_ids = {m.id for m, _ in all_matches}
                 for dept, num in course_matches:
                     _code = f"{dept.upper()} {num}"
                     try:
@@ -932,30 +922,21 @@ async def chat_stream(
                         for m in _sched.matches:
                             if m.id not in _existing_ids:
                                 m.score = max(m.score, 0.85)
-                                all_matches.append(m)
+                                all_matches.append((m, "schedule"))
                                 _existing_ids.add(m.id)
                     except Exception:
                         pass
 
-            all_matches.sort(key=lambda m: m.score, reverse=True)
+            all_matches.sort(key=lambda item: item[0].score, reverse=True)
             all_matches = all_matches[:keep_total]
 
-            context_text = ""
-            chunks_used = 0
-            top_score = all_matches[0].score if all_matches else None
-
-            for match in all_matches:
-                is_program_chunk = "program" in match.metadata or "section" in match.metadata
-                if not is_program_query or not is_program_chunk:
-                    if match.score < SIMILARITY_THRESHOLD:
-                        continue
-                metadata = match.metadata
-                doc_text = metadata.get("text", "")
-                doc_source = metadata.get("source", "Unknown Source")
-                context_text += f"\n--- Source: {doc_source} (relevance: {match.score:.2f}) ---\n{doc_text}\n"
-                chunks_used += 1
+            context_text, sources_list, chunks_used = build_context_and_citations(
+                all_matches, is_program_query, SIMILARITY_THRESHOLD
+            )
+            top_score = all_matches[0][0].score if all_matches else None
 
             # If course cards were fetched, add their data directly to context
+            course_citations = []
             if course_matches and structured_courses:
                 course_context = "\n--- Course Data (fetched directly) ---\n"
                 for c in structured_courses:
@@ -963,7 +944,9 @@ async def chat_stream(
                     course_context += f"Description: {c['description']}\n"
                     prereqs = c.get('prerequisiteText') or (", ".join(c['prerequisites']) if c['prerequisites'] else "None")
                     course_context += f"Prerequisites: {prereqs}\n\n"
+                    course_citations.append(citation_from_course(c))
                 context_text = course_context + context_text
+                sources_list = dedupe_citations(course_citations + sources_list)
 
             if not context_text:
                 log_no_context(user_query, "stream_rag")
@@ -983,34 +966,19 @@ async def chat_stream(
                 stream=True,
             )
 
+            full_answer = ""
             async for chunk in stream:
                 if chunk.choices[0].delta.content:
                     content = chunk.choices[0].delta.content
+                    full_answer += content
                     yield f"data: {json.dumps({'type': 'token', 'content': content})}\n\n"
 
             # Emit pill cards only for direct lookups ("what is COMP 1005")
             if structured_courses and is_direct_lookup and not is_schedule_query:
                 yield f"data: {json.dumps({'type': 'courses', 'data': structured_courses})}\n\n"
 
-            # Emit sources
-            sources_list = []
-            seen_urls = set()
-            for match in all_matches:
-                if match.score < SIMILARITY_THRESHOLD:
-                    continue
-                url = match.metadata.get("source", "")
-                title = (
-                    match.metadata.get("title") or
-                    match.metadata.get("program") or
-                    match.metadata.get("heading") or
-                    match.metadata.get("section") or ""
-                )
-                if url and url not in seen_urls and "Unknown" not in url:
-                    seen_urls.add(url)
-                    sources_list.append({"url": url, "title": title})
-
-            if sources_list:
-                yield f"data: {json.dumps({'type': 'sources', 'data': sources_list[:3]})}\n\n"
+            if sources_list and should_emit_citations(full_answer, chunks_used):
+                yield f"data: {json.dumps({'type': 'sources', 'data': sources_list})}\n\n"
 
             # Log after stream completes
             ms = int((time.time() - t_start) * 1000)

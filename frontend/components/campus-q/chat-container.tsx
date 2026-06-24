@@ -34,6 +34,7 @@ interface CourseCardData {
 interface Source {
   url: string
   title: string
+  section?: string
 }
 
 interface Message {
