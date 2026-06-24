@@ -171,6 +171,7 @@ pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
 index = pc.Index("knowledge-base")
 
 SIMILARITY_THRESHOLD = 0.25
+CHAT_MODEL = "gpt-4o-mini"
 
 
 def rewrite_query_for_embedding(user_query: str) -> str:
@@ -178,7 +179,7 @@ def rewrite_query_for_embedding(user_query: str) -> str:
         return user_query
     try:
         rewrite_response = openai_client.chat.completions.create(
-            model="gpt-4o",
+            model=CHAT_MODEL,
             messages=[
                 {
                     "role": "system",
@@ -739,7 +740,7 @@ async def chat_endpoint(
         api_messages.append({"role": "user", "content": user_query})
 
         response = openai_client.chat.completions.create(
-            model="gpt-4o",
+            model=CHAT_MODEL,
             messages=api_messages,
             temperature=0.4,
         )
@@ -960,7 +961,7 @@ async def chat_stream(
             api_messages.append({"role": "user", "content": user_query})
 
             stream = await async_openai_client.chat.completions.create(
-                model="gpt-4o",
+                model=CHAT_MODEL,
                 messages=api_messages,
                 temperature=0.4,
                 stream=True,
