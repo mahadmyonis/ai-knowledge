@@ -9,6 +9,7 @@ import { ExternalLink, ThumbsUp, ThumbsDown } from "lucide-react"
 interface Source {
   url: string
   title: string
+  section?: string
 }
 
 interface ChatMessageProps {
@@ -72,22 +73,15 @@ function Sources({ sources }: { sources: Source[] }) {
   if (!sources.length) return null
 
   const formatTitle = (source: Source): string => {
-    if (source.title && source.title.length > 3) {
-      return source.title.length > 48 ? source.title.slice(0, 48) + "…" : source.title
+    if (source.title && source.title.length > 3 && !/^[A-Z]{3,4}$/.test(source.title)) {
+      return source.title.length > 56 ? source.title.slice(0, 56) + "…" : source.title
     }
     try {
       const parts = new URL(source.url).pathname.split("/").filter(Boolean)
-      return (parts[parts.length - 1]?.replace(/-/g, " ") || "Source")
+      const slug = parts[parts.length - 1]?.replace(/-/g, " ") || "Source"
+      return slug.length > 56 ? slug.slice(0, 56) + "…" : slug
     } catch {
       return "Source"
-    }
-  }
-
-  const formatDomain = (url: string): string => {
-    try {
-      return new URL(url).hostname.replace("www.", "")
-    } catch {
-      return ""
     }
   }
 
@@ -102,9 +96,17 @@ function Sources({ sources }: { sources: Source[] }) {
           href={s.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="group inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-border bg-secondary/50 hover:bg-secondary hover:border-border/80 transition-all text-xs text-muted-foreground hover:text-foreground"
+          title={s.section ? `${formatTitle(s)} — ${s.section}` : formatTitle(s)}
+          className="group inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-border bg-secondary/50 hover:bg-secondary hover:border-border/80 transition-all text-xs text-muted-foreground hover:text-foreground max-w-[240px]"
         >
-          <span className="truncate max-w-[160px] capitalize">{formatTitle(s)}</span>
+          <span className="flex flex-col min-w-0">
+            <span className="truncate capitalize">{formatTitle(s)}</span>
+            {s.section && (
+              <span className="truncate text-[10px] text-muted-foreground/60 normal-case">
+                {s.section}
+              </span>
+            )}
+          </span>
           <ExternalLink className="size-2.5 shrink-0 opacity-40 group-hover:opacity-70 transition-opacity" />
         </a>
       ))}
