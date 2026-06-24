@@ -58,7 +58,7 @@ These must **all pass** before every production deploy:
 |---|---|---|
 | 1 | Can I take COMP 3000 without COMP 2401? | Prerequisite logic |
 | 2 | How do I drop COMP 2402? | Registration + asks for term |
-| 3 | What's the minimum CGPA for good standing? | Academic regulations |
+| 3 | When does the first ACE evaluation happen? | Academic regulations (5.5 credits) |
 | 4 | Last day to withdraw from a fall course? | Deadline accuracy |
 | 5 | How many credits to graduate? | Asks which program (no guessing) |
 | 6 | Who teaches SYSC 3110 in Fall 2026? | Schedule / instructor |

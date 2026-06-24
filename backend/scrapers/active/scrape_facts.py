@@ -112,6 +112,27 @@ graduation requirements, how long is the commerce degree, sprott graduation, bco
 credits needed, how many credits does bcom require, commerce degree length.""",
     ),
 
+    # ── ACE first evaluation timing ───────────────────────────────────────────
+    (
+        "ace-first-evaluation",
+        "When Does the First Academic Continuation Evaluation (ACE) Happen?",
+        """Academic Continuation Evaluation (ACE) — When the First Evaluation Happens
+
+The first Academic Continuation Evaluation (ACE) is made once 5.5 or more credits
+have been completed at Carleton University and/or through the University of Ottawa
+Exchange, and all final grades in a specific term are available.
+
+After the first evaluation, subsequent ACE assessments occur at the end of each
+term in which the student completes a course.
+
+A completed course is any registration that results in a grade or notation other
+than WDN, IP, CTN, or AUD.
+
+Related terms: first ACE, when is ACE, ACE evaluation timing, 5.5 credits ACE,
+academic continuation evaluation when, when does academic standing get checked,
+how many credits before ACE, first academic standing review.""",
+    ),
+
     # ── ACE / good standing CGPA thresholds ───────────────────────────────────
     (
         "ace-good-standing-cgpa",
