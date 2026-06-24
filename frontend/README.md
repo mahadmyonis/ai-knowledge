@@ -1,36 +1,81 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# CampusQ Frontend
 
-## Getting Started
+Next.js web app for CampusQ — chat UI, landing pages, and admin tools.
 
-First, run the development server:
+**New to the project?** Start at the [main README](../README.md) and [Getting Started](../docs/GETTING_STARTED.md).
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+---
+
+## What this folder does
+
+| Path | Purpose |
+|------|---------|
+| `app/page.tsx` | Carleton landing page |
+| `app/chat/page.tsx` | Main chat (beta product) |
+| `app/dashboard/page.tsx` | Advisor analytics |
+| `components/campus-q/` | Chat UI, program explorer, tools |
+| `components/landing/` | Multi-university waitlist pages |
+
+---
+
+## Run locally
+
+**Terminal 1 — Backend** (required):
+
+```powershell
+cd backend
+py -m uvicorn main:app --reload --port 8000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+**Terminal 2 — Frontend:**
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```powershell
+cd frontend
+npm install
+npm run dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Open: http://localhost:3000
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
+## Environment
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Create `frontend/.env.local` (optional — defaults work for local dev):
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```env
+NEXT_PUBLIC_API_URL=http://localhost:8000
+```
 
-## Deploy on Vercel
+If not set, the app talks to `http://localhost:8000` automatically.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Pages
+
+| URL | What it is |
+|-----|------------|
+| `/` | Carleton landing page |
+| `/chat` | Main chat (beta) |
+| `/dashboard` | Advisor analytics |
+| `/about` | About page |
+
+---
+
+## Build for production
+
+```powershell
+npm run build
+npm start
+```
+
+Production is deployed separately (e.g. Vercel for frontend, Render for backend).
+
+---
+
+## Tech stack
+
+- **Next.js 14** (App Router)
+- **React**
+- **Tailwind CSS**
+- **TypeScript**
