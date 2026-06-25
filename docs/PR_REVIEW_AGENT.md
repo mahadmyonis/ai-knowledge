@@ -1,56 +1,83 @@
 # PR Review Agent
 
-A Cursor agent workflow that finds GitHub pull requests assigned to you and reviews them using CampusQ team rules.
+Automatically reviews GitHub pull requests assigned to you — **no manual steps after one-time setup**.
 
 ---
 
-## What it does
+## How it works
 
-1. Lists open PRs assigned to your GitHub account
-2. Pulls the full diff and metadata for each PR
-3. Applies the CampusQ review rubric (quality gates, PR hygiene, security, code areas)
-4. Drafts a structured review — and posts it to GitHub when you approve
-
----
-
-## Quick start
-
-### 1. Prerequisites
-
-- [GitHub CLI](https://cli.github.com/) installed: `gh --version`
-- Authenticated: `gh auth login`
-- Repo cloned locally
-
-### 2. List your assigned PRs
-
-```bash
-python scripts/pr_review/review_assigned_prs.py list
+```
+PR assigned to you (or review requested)
+        ↓
+GitHub Action fires (.github/workflows/pr-review-agent.yml)
+        ↓
+Checks: right user? already reviewed this commit?
+        ↓
+Spawns Cursor Cloud Agent on the PR
+        ↓
+Agent reads CampusQ rubric → posts review on GitHub
 ```
 
-### 3. Run the Cursor agent
-
-In Cursor, start a Cloud Agent (or chat) with:
-
-> Review all pull requests assigned to me on CampusQ. Use the review-assigned-prs skill. Show me drafts before posting.
-
-The agent reads `.cursor/skills/review-assigned-prs/SKILL.md` and follows the rubric automatically.
-
-### 4. Review a single PR manually
-
-```bash
-python scripts/pr_review/review_assigned_prs.py context --number 12
-```
-
-Add `--json` for machine-readable output.
+You assign yourself (or get requested as reviewer) on a PR. The agent reviews it and posts feedback within a few minutes. You don't open Cursor or run any commands.
 
 ---
 
-## Review rubric (summary)
+## One-time setup (5 minutes)
 
-The agent checks every PR against:
+### 1. Add GitHub secrets & variables
 
-| Area | Source doc |
-|------|------------|
+In [github.com/Retriive/campusQ/settings/secrets/actions](https://github.com/Retriive/campusQ/settings/secrets/actions):
+
+| Name | Type | Value |
+|------|------|-------|
+| `CURSOR_API_KEY` | Secret | From [cursor.com/dashboard](https://cursor.com/dashboard) → **API Keys** |
+
+In [Settings → Variables → Actions](https://github.com/Retriive/campusQ/settings/variables/actions):
+
+| Name | Value |
+|------|-------|
+| `PR_REVIEW_USER` | Your GitHub username (e.g. `mahadmyonis`) |
+
+### 2. Merge this PR
+
+The workflow file ships with the repo. Once merged to `main`, it runs automatically.
+
+### 3. Test it
+
+1. Open any PR on the repo
+2. Assign yourself (or request yourself as reviewer)
+3. Watch **Actions → PR Review Agent** — should trigger within ~1 minute
+4. Agent posts a review tagged `<!-- campusq-pr-review-agent -->`
+
+Manual test:
+
+```bash
+gh workflow run pr-review-agent.yml -f pr_number=12
+```
+
+---
+
+## What triggers a review
+
+| Event | When |
+|-------|------|
+| PR assigned to you | Someone assigns you on GitHub |
+| Review requested | You're added as a reviewer |
+| PR opened / updated | You're already assignee or reviewer |
+| Every 30 min (cron) | Catches anything webhooks missed |
+
+**Skipped when:**
+
+- PR is a draft
+- You're the PR author
+- Latest commit already has an automated review
+
+---
+
+## What it checks
+
+| Area | Source |
+|------|--------|
 | PR description template | [HOW_WE_WORK.md](HOW_WE_WORK.md) |
 | Deploy / expansion gates | [TEAM_RULES.md](TEAM_RULES.md) |
 | Which tests to run | [QUALITY_GATE.md](QUALITY_GATE.md) |
@@ -62,51 +89,37 @@ The agent checks every PR against:
 |---------------|---------------|
 | `main.py`, `retrieval.py`, `citations.py`, scrapers, `golden.csv` | **core** (≥27/32) |
 | Other `backend/` files | **smoke** (10/10) |
-| `docs/` or `frontend/` only (no API) | **none** (N/A OK) |
-
-### Blockers the agent flags
-
-- Missing PR description sections (What / Why / How to test)
-- Backend changes without documented gate results
-- Possible secrets in the diff
-- `golden.csv` threshold edits without Mahad sign-off
-- Scope creep (unrelated changes bundled)
+| `docs/` or `frontend/` only | **none** (N/A OK) |
 
 ---
 
-## Posting a review
+## Alternative: Cursor Automation (no GitHub Action)
 
-After the agent drafts a review and you approve:
+If you prefer managing this in the Cursor dashboard instead of GitHub Actions:
+
+1. Go to [cursor.com/automations](https://cursor.com/automations) → **New automation**
+2. **Trigger:** GitHub → `Retriive/campusQ` → PR opened / PR pushed / Review requested
+3. **Repository:** `Retriive/campusQ`
+4. **Tools:** enable **Comment on pull request**
+5. **Prompt:** paste contents of `.cursor/automations/pr-review-assigned.prompt.md`
+6. Save and enable
+
+This runs entirely in Cursor's cloud — no `CURSOR_API_KEY` in GitHub needed.
+
+---
+
+## Manual use (optional)
 
 ```bash
-python scripts/pr_review/review_assigned_prs.py post \
-  --number 12 \
-  --event REQUEST_CHANGES \
-  --body-file /tmp/review.md
+# List PRs waiting for you
+python3 scripts/pr_review/review_assigned_prs.py list --include-reviewer
+
+# Inspect one PR
+python3 scripts/pr_review/review_assigned_prs.py context --number 12
+
+# Trigger agent manually
+python3 scripts/pr_review/trigger_cursor_review.py --pr-url https://github.com/Retriive/campusQ/pull/12
 ```
-
-Events: `APPROVE`, `REQUEST_CHANGES`, or `COMMENT`.
-
----
-
-## Assigning PRs for review
-
-On GitHub, open a PR → **Reviewers** → assign yourself or a teammate.
-
-The agent only picks up PRs where you are listed as **assignee** (not just reviewer). To also catch reviewer-assigned PRs, ask the agent:
-
-> Also list PRs where I'm a requested reviewer.
-
----
-
-## Troubleshooting
-
-| Problem | Fix |
-|---------|-----|
-| `No open PRs assigned` | Assign yourself on GitHub, or use `--assignee your-username` |
-| `gh: Resource not accessible` | Re-run `gh auth login` with `repo` scope |
-| Agent doesn't know the rubric | Say "use the review-assigned-prs skill" |
-| Diff too large | Agent gets first 80k chars; use `gh pr diff N` for full diff |
 
 ---
 
@@ -114,22 +127,21 @@ The agent only picks up PRs where you are listed as **assignee** (not just revie
 
 | Path | Purpose |
 |------|---------|
-| `.cursor/skills/review-assigned-prs/SKILL.md` | Agent instructions & rubric |
-| `scripts/pr_review/review_assigned_prs.py` | CLI to list, fetch, and post reviews |
-| `docs/PR_REVIEW_AGENT.md` | This guide |
+| `.github/workflows/pr-review-agent.yml` | Automatic trigger on GitHub |
+| `.cursor/automations/pr-review-assigned.prompt.md` | Agent prompt (automation mode) |
+| `.cursor/skills/review-assigned-prs/SKILL.md` | Full review rubric |
+| `scripts/pr_review/select_prs.py` | Picks PRs that need review |
+| `scripts/pr_review/trigger_cursor_review.py` | Starts Cursor Cloud Agent |
+| `scripts/pr_review/review_assigned_prs.py` | CLI helpers (list, context, post) |
 
 ---
 
-## Example agent prompt
+## Troubleshooting
 
-Copy-paste into Cursor when you want a review session:
-
-```
-Review all GitHub PRs assigned to me on retriive/campusq.
-
-For each PR:
-1. Fetch context with scripts/pr_review/review_assigned_prs.py
-2. Apply the CampusQ review rubric from the review-assigned-prs skill
-3. Draft a structured review (verdict, checklist, findings)
-4. Show me all drafts before posting anything
-```
+| Problem | Fix |
+|---------|-----|
+| Workflow doesn't run | Check `PR_REVIEW_USER` matches your GitHub username exactly |
+| "CURSOR_API_KEY not set" | Add secret in repo Settings → Secrets |
+| Agent runs but no review posted | Check agent run at cursor.com/agents — may need GitHub app permissions |
+| Duplicate reviews on every push | Should only re-review new commits; check for `campusq-pr-review-agent` marker |
+| Want to review as yourself, not bot | Use Cursor Automation (uses your auth) instead of GitHub Action |

@@ -2,6 +2,15 @@
 
 Use this skill when the user wants to review PRs assigned to them on the CampusQ repo.
 
+## Automation mode
+
+When triggered by GitHub Actions or a Cursor Automation (not interactive chat):
+
+- **Do NOT** ask for confirmation — post the review automatically
+- **Always** include `<!-- campusq-pr-review-agent -->` in the review body
+- **Skip** if that marker already exists on the latest commit SHA
+- Use prompt: `.cursor/automations/pr-review-assigned.prompt.md`
+
 ## Prerequisites
 
 - `gh` CLI installed and authenticated (`gh auth status`)
@@ -125,7 +134,7 @@ Draft the review body in markdown:
 - ...
 ```
 
-**Always show the draft to the user before posting** unless they explicitly said "review and post all assigned PRs."
+**Always show the draft to the user before posting** unless running in **automation mode** (GitHub Action or Cursor Automation).
 
 ### 5. Multi-PR batch
 
