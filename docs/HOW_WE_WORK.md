@@ -242,7 +242,7 @@ py evals/quality_gate.py --tier core
 
 **What:** GitHub Actions runs smoke (10/10) against **production** after every push to `main`. Stops us shipping a broken chatbot because nobody ran the test manually.
 
-**Files:** new `.github/workflows/smoke-gate.yml` (example workflow already in repo: `pr-review-agent.yml`)
+**Files:** new `.github/workflows/smoke-gate.yml` (first workflow in the repo)
 
 **Mahad must add repo secrets** (Settings → Secrets → Actions):
 
@@ -286,7 +286,7 @@ A task is **done** when:
 | When | Where |
 |------|-------|
 | "I'm starting X" | Team chat — avoid duplicate work |
-| PR ready for review | GitHub PR + ping reviewer — or run [PR review agent](PR_REVIEW_AGENT.md) |
+| PR ready for review | GitHub PR + ping reviewer |
 | Smoke failed | Post failure + CSV path — don't hide it |
 | Production issue | Mahad + `#incidents` or team chat immediately |
 | "Can we ship?" | Check smoke on prod first, then ask |
