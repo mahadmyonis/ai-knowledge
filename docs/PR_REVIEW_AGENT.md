@@ -55,6 +55,8 @@ Manual test:
 gh workflow run pr-review-agent.yml -f pr_number=12
 ```
 
+**Live test PR:** open a docs-only PR, assign `PR_REVIEW_USER`, and confirm the Action spawns a Cursor agent that posts a review with `<!-- campusq-pr-review-agent -->`.
+
 ---
 
 ## What triggers a review
