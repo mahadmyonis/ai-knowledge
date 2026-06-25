@@ -198,6 +198,12 @@ Details: [PROJECT_MAP.md](PROJECT_MAP.md)
 
 **Not assigned yet?** Pick an area, tell the team in Slack, own it.
 
+**Current tasks** *(assigned work, not standing owner roles)*:
+
+| Person | Task |
+|--------|------|
+| Abdulla | [School #2 waitlist landing pages](assignments/ABDULLA_WAITLIST_LANDINGS.md) |
+
 ---
 
 ## Definition of done
