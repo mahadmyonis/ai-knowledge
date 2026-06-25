@@ -224,7 +224,7 @@ A task is **done** when:
 | When | Where |
 |------|-------|
 | "I'm starting X" | Team chat — avoid duplicate work |
-| PR ready for review | GitHub PR + ping reviewer — or run [PR review agent](PR_REVIEW_AGENT.md) |
+| PR ready for review | GitHub PR + ping reviewer |
 | Smoke failed | Post failure + CSV path — don't hide it |
 | Production issue | Mahad + `#incidents` or team chat immediately |
 | "Can we ship?" | Check smoke on prod first, then ask |
