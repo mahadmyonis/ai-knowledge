@@ -202,7 +202,7 @@ Details: [PROJECT_MAP.md](PROJECT_MAP.md)
 
 | Person | Task |
 |--------|------|
-| Abdulla | [School #2 waitlist landing pages](assignments/ABDULLA_WAITLIST_LANDINGS.md) |
+| Abdulla | [GitHub Actions smoke gate on prod](assignments/ABDULLA_GITHUB_ACTIONS.md) |
 
 ---
 
