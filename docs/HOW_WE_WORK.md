@@ -191,10 +191,13 @@ Details: [PROJECT_MAP.md](PROJECT_MAP.md)
 |------|---------|--------|
 | Product & deploy calls | Mahad | — |
 | AI / chat quality | Backend lead | Mahad |
+| **Prompt guardrails & safety** | **Salama** | Mahad |
 | Frontend / student app | Frontend lead | Any dev |
 | University data / scrapers | Backend lead | — |
 | Quality gate & tests | Anyone | Mahad reviews |
 | Infrastructure (Render, Vercel) | Whoever ships | Mahad |
+
+**Salama's current task:** [Prompt guardrails & safety](assignments/SALAMA_PROMPT_GUARDRAILS.md)
 
 **Not assigned yet?** Pick an area, tell the team in Slack, own it.
 
