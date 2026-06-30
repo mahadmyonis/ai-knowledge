@@ -9,3 +9,4 @@ cohere
 resend
 apscheduler
 pytz
+PyJWT[crypto]

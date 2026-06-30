@@ -109,7 +109,7 @@ export function EmptyState({ onSuggestionClick, onViewChange }: EmptyStateProps)
         <div className="grid grid-cols-2 gap-2.5 w-full">
           {QUICK_ASKS.map(({ icon: Icon, label, question }) => (
             <button
-              key={label}
+              key={question}
               onClick={() => onSuggestionClick(question)}
               className="flex items-center gap-3 px-4 py-3 rounded-xl border border-border bg-card hover:bg-secondary/40 hover:border-border/80 transition-all duration-150 text-left group"
             >

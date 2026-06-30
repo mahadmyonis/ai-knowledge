@@ -9,7 +9,7 @@ from datetime import datetime, date
 # Request-scoped session id — set once per request, read by log_query.
 # Avoids threading session_id through every log call site.
 _current_session: contextvars.ContextVar[str] = contextvars.ContextVar("session_id", default="none")
-from fastapi import FastAPI, UploadFile, File, Form
+from fastapi import FastAPI, UploadFile, File, Form, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pinecone import Pinecone
@@ -24,6 +24,7 @@ from citations import (
     should_emit_citations,
 )
 from retrieval import retrieve_and_rerank
+from auth import require_user
 
 load_dotenv()
 
@@ -180,12 +181,20 @@ def log_feedback(session_id: str, question: str, answer: str, rating: str):
         "answer": answer[:500],
     })
 
+# CORS: if ALLOWED_ORIGINS is set (comma-separated), restrict to that allowlist.
+# If it's unset, fall back to "*" — today's behavior — so deploying this change
+# is a no-op until you deliberately lock it down via the env var on Render.
+# Same safe-by-default approach as REQUIRE_AUTH. Auth is via bearer token
+# (Authorization header), not cookies, so allow_credentials stays False.
+_origins_env = os.getenv("ALLOWED_ORIGINS", "").strip()
+_ALLOWED_ORIGINS = [o.strip() for o in _origins_env.split(",") if o.strip()] or ["*"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=_ALLOWED_ORIGINS,
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type"],
 )
 
 openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
@@ -569,8 +578,12 @@ async def chat_endpoint(
     session_id: str = Form("none"),
     user_id: str = Form("anonymous"),
     file: UploadFile = File(None),
+    auth_user: str = Depends(require_user),
 ):
     _current_session.set(session_id)
+    # Trust the verified Clerk identity over the client-supplied form field.
+    if auth_user != "anonymous":
+        user_id = auth_user
     user_query = question
     t_start = time.time()
 
@@ -763,8 +776,12 @@ async def chat_stream(
     history: str = Form("[]"),
     session_id: str = Form("none"),
     user_id: str = Form("anonymous"),
+    auth_user: str = Depends(require_user),
 ):
     _current_session.set(session_id)
+    # Trust the verified Clerk identity over the client-supplied form field.
+    if auth_user != "anonymous":
+        user_id = auth_user
     user_query = question
 
     t_start = time.time()

@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { track } from "@vercel/analytics"
-import { useUser } from "@clerk/nextjs"
+import { useUser, useAuth } from "@clerk/nextjs"
 import { cn } from "@/lib/utils"
 import { MessageSquare as MessageSquareIcon, BookOpen as BookOpenIcon, BarChart2 as BarChart2Icon, CalendarDays as CalendarDaysIcon, PenLine, Trash2, Pencil, Check, X } from "lucide-react"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
@@ -209,6 +209,18 @@ function CoursePills({
 
 export function ChatContainer() {
   const { user } = useUser()
+  const { getToken } = useAuth()
+
+  // Build the Authorization header from the current Clerk session token.
+  // Returns {} when signed out so calls still work while backend auth is off.
+  const authHeader = async (): Promise<HeadersInit> => {
+    try {
+      const token = await getToken()
+      return token ? { Authorization: `Bearer ${token}` } : {}
+    } catch {
+      return {}
+    }
+  }
   const [messages, setMessages] = React.useState<Message[]>([])
   const [sessions, setSessions] = React.useState<ChatSession[]>([])
   const [currentSessionId, setCurrentSessionId] = React.useState<string>("")
@@ -352,6 +364,7 @@ export function ChatContainer() {
       const response = await fetch(`${API_URL}/api/chat/stream`, {
         method: "POST",
         body: formData,
+        headers: await authHeader(),
       })
 
       if (!response.body) throw new Error("No response body")

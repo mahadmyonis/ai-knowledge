@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import ReactMarkdown from "react-markdown"
 import { cn } from "@/lib/utils"
 import { useCampus } from "./campus-context"
+import { useAuth } from "@clerk/nextjs"
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
@@ -591,6 +592,7 @@ const ALL_PROGRAMS_SORTED = [...ALL_PROGRAMS].sort((a, b) => a.name.localeCompar
 
 export function ProgramExplorer() {
   useCampus()
+  const { getToken } = useAuth()
   const [tab, setTab] = React.useState<"browse" | "plan">("browse")
   const [view, setView] = React.useState<ViewState>({ screen: "directory" })
   const [result, setResult] = React.useState("")
@@ -622,7 +624,12 @@ export function ProgramExplorer() {
     formData.append("question", question)
     formData.append("history", "[]")
     formData.append("session_id", "program-explorer")
-    const response = await fetch(`${API_URL}/api/chat/stream`, { method: "POST", body: formData })
+    const token = await getToken().catch(() => null)
+    const response = await fetch(`${API_URL}/api/chat/stream`, {
+      method: "POST",
+      body: formData,
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    })
     if (!response.body) throw new Error()
     const reader = response.body.getReader()
     const decoder = new TextDecoder()

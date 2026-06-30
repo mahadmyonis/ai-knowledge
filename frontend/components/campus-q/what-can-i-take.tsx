@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { useAuth } from "@clerk/nextjs"
 import { Plus, X, Sparkles, Loader2, BookOpen } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import ReactMarkdown from "react-markdown"
@@ -8,6 +9,7 @@ import ReactMarkdown from "react-markdown"
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
 export function WhatCanITake() {
+  const { getToken } = useAuth()
   const [completed, setCompleted] = React.useState<string[]>([])
   const [input, setInput] = React.useState("")
   const [result, setResult] = React.useState("")
@@ -37,9 +39,11 @@ export function WhatCanITake() {
       formData.append("question", question)
       formData.append("history", "[]")
 
+      const token = await getToken().catch(() => null)
       const response = await fetch(`${API_URL}/api/chat/stream`, {
         method: "POST",
         body: formData,
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
       })
 
       if (!response.body) throw new Error("No response body")
