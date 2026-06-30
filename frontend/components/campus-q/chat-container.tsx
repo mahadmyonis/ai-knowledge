@@ -486,7 +486,7 @@ export function ChatContainer() {
       </div>
 
       <div className="flex-1 flex flex-col min-w-0">
-        <Header isDark={isDark} onToggleDark={() => setIsDark(!isDark)} onOpenHistory={() => setShowHistory(true)} />
+        <Header isDark={isDark} onToggleDark={() => setIsDark(!isDark)} onOpenHistory={() => setShowHistory(true)} onHome={handleNewChat} />
 
         {/* Non-chat views */}
         {!isChatView && (
@@ -549,14 +549,15 @@ export function ChatContainer() {
 
                         {suggestions.length > 0 && (
                           <div className="flex flex-wrap gap-2 mt-2 ml-11">
-                            {suggestions.map((s) => (
+                            {suggestions.map((s, i) => (
                               <button
                                 key={s.label}
                                 onClick={() => {
                                   if (s.query) handleSuggestionClick(s.query)
                                   else if (s.view) setCurrentView(s.view)
                                 }}
-                                className="px-3 py-1.5 rounded-full text-xs border border-primary/30 text-primary hover:bg-primary/10 transition-colors"
+                                style={{ animationDelay: `${i * 45}ms` }}
+                                className="stagger-item px-3 py-1.5 rounded-full text-xs border border-primary/30 text-primary hover:bg-primary/10 hover:border-primary/50 transition-[background-color,border-color,transform] duration-150 ease-[var(--ease-out)] active:scale-[0.97]"
                               >
                                 {s.label}
                               </button>
@@ -599,13 +600,13 @@ export function ChatContainer() {
                 className="flex-1 flex flex-col items-center pt-2 pb-3 gap-1 transition-colors"
               >
                 <div className={cn(
-                  "flex items-center justify-center rounded-2xl transition-all duration-200",
+                  "flex items-center justify-center rounded-2xl transition-[background-color,padding] duration-200 ease-[var(--ease-out)]",
                   active
                     ? "bg-primary/10 px-4 py-1.5"
                     : "px-3 py-1.5"
                 )}>
                   <Icon className={cn(
-                    "transition-all duration-200",
+                    "transition-colors duration-200",
                     active ? "size-5 text-primary" : "size-5 text-muted-foreground/50"
                   )} />
                 </div>

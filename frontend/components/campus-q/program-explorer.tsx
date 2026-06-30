@@ -724,7 +724,7 @@ export function ProgramExplorer() {
           <button
             onClick={() => setTab("browse")}
             className={cn(
-              "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all",
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-[color,background-color,box-shadow,transform] duration-150 ease-[var(--ease-out)] active:scale-[0.97]",
               tab === "browse" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
             )}
           >
@@ -733,7 +733,7 @@ export function ProgramExplorer() {
           <button
             onClick={() => setTab("plan")}
             className={cn(
-              "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all",
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-[color,background-color,box-shadow,transform] duration-150 ease-[var(--ease-out)] active:scale-[0.97]",
               tab === "plan" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
             )}
           >
@@ -844,7 +844,7 @@ export function ProgramExplorer() {
                   <button
                     key={stream.queryName}
                     onClick={() => handleStreamClick(selectedDept, stream)}
-                    className="group flex flex-col items-start gap-2 rounded-xl border border-border bg-card hover:border-primary/40 hover:bg-secondary/30 hover:-translate-y-px transition-all text-left p-3"
+                    className="group flex flex-col items-start gap-2 rounded-xl border border-border bg-card hover:border-primary/40 hover:bg-secondary/30 hover:-translate-y-px active:scale-[0.98] transition-[transform,border-color,background-color] duration-200 ease-[var(--ease-out)] text-left p-3"
                   >
                     <span className={cn("inline-block text-[10px] font-bold font-mono px-2 py-0.5 rounded tracking-wide", colors.bg, colors.text)}>
                       {ab}
@@ -857,7 +857,7 @@ export function ProgramExplorer() {
           ) : (
             <button
               onClick={() => handleProgramClick(selectedDept)}
-              className="group flex flex-col items-start gap-2 rounded-xl border border-border bg-card hover:border-primary/40 hover:bg-secondary/30 hover:-translate-y-px transition-all text-left p-3 w-full"
+              className="group flex flex-col items-start gap-2 rounded-xl border border-border bg-card hover:border-primary/40 hover:bg-secondary/30 hover:-translate-y-px active:scale-[0.98] transition-[transform,border-color,background-color] duration-200 ease-[var(--ease-out)] text-left p-3 w-full"
             >
               {(() => {
                 const ab = degreeAbbrev(selectedDept.faculty, selectedDept.name)
@@ -894,7 +894,7 @@ function ProgramCard({
   return (
     <button
       onClick={onClick}
-      className="group flex flex-col items-start gap-2 rounded-xl border border-border bg-card hover:border-primary/40 hover:bg-secondary/30 hover:-translate-y-px transition-all text-left p-3"
+      className="group flex flex-col items-start gap-2 rounded-xl border border-border bg-card hover:border-primary/40 hover:bg-secondary/30 hover:-translate-y-px active:scale-[0.98] transition-[transform,border-color,background-color] duration-200 ease-[var(--ease-out)] text-left p-3"
     >
       {/* Degree badge */}
       <span className={cn("inline-block text-[10px] font-bold font-mono px-2 py-0.5 rounded tracking-wide", colors.bg, colors.text)}>

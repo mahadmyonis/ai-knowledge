@@ -122,7 +122,7 @@ function CourseNodeCard({ data }: NodeProps) {
     <div
       onClick={onToggle}
       className={cn(
-        "rounded-xl border-2 px-3 py-2 cursor-pointer select-none transition-all hover:-translate-y-0.5 hover:shadow-md",
+        "rounded-xl border-2 px-3 py-2 cursor-pointer select-none transition-[transform,box-shadow,border-color] duration-200 ease-[var(--ease-out)] hover:-translate-y-0.5 hover:shadow-md active:scale-[0.98]",
         bg
       )}
       style={{ width: NODE_W, minHeight: NODE_H }}
@@ -328,7 +328,7 @@ export function DegreePlan({ slug, variant }: { slug: string; variant: string })
       {/* Progress bar */}
       <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
         <div
-          className="h-full bg-emerald-500 transition-all duration-500 rounded-full"
+          className="h-full bg-emerald-500 transition-[width] duration-500 ease-out rounded-full"
           style={{ width: totalCount ? `${(doneCount / totalCount) * 100}%` : "0%" }}
         />
       </div>

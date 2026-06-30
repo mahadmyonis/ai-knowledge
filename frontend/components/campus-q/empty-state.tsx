@@ -9,6 +9,12 @@ interface EmptyStateProps {
   onViewChange?: (view: string) => void
 }
 
+const TOOLS = [
+  { icon: BookOpen, label: "Programs", sub: "Browse degree requirements", action: "programs" },
+  { icon: BarChart2, label: "Compare", sub: "Courses side by side", action: "compare" },
+  { icon: CalendarDays, label: "Deadlines", sub: "Key dates with countdowns", action: "deadlines" },
+]
+
 const QUICK_ASKS = [
   {
     icon: GitBranch,
@@ -57,44 +63,20 @@ export function EmptyState({ onSuggestionClick, onViewChange }: EmptyStateProps)
         </p>
       </div>
 
-      {/* Tool cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 w-full max-w-2xl">
-        {[
-          {
-            icon: BookOpen,
-            label: "Programs",
-            sub: "Browse degree requirements",
-            action: "programs",
-          },
-          {
-            icon: BarChart2,
-            label: "Compare",
-            sub: "Side-by-side course comparison",
-            action: "compare",
-          },
-          {
-            icon: CalendarDays,
-            label: "Deadlines",
-            sub: "Key dates with countdowns",
-            action: "deadlines",
-          },
-        ].map((item) => {
+      {/* Tools — the Programs / Compare / Deadlines buttons */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full max-w-2xl">
+        {TOOLS.map((item) => {
           const Icon = item.icon
           return (
             <button
               key={item.label}
               onClick={() => onViewChange?.(item.action)}
-              className="group flex flex-col gap-3 p-4 rounded-2xl border border-border bg-card hover:bg-secondary/40 hover:border-border/80 transition-all duration-150 text-left"
+              className="group flex items-start gap-3 p-4 rounded-xl border border-border/70 bg-card/40 hover:bg-card hover:border-border transition-[background-color,border-color,transform] duration-200 ease-[var(--ease-out)] active:scale-[0.98] text-left"
             >
-              <div className={cn(
-                "size-8 rounded-lg flex items-center justify-center",
-                theme.bgClass
-              )}>
-                <Icon className="size-4 text-white" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-foreground">{item.label}</p>
-                <p className="text-xs text-muted-foreground leading-relaxed mt-0.5">{item.sub}</p>
+              <Icon className="size-4 mt-0.5 shrink-0 text-muted-foreground group-hover:text-foreground transition-colors duration-200" />
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-foreground leading-tight">{item.label}</p>
+                <p className="text-[11px] text-muted-foreground leading-snug mt-1">{item.sub}</p>
               </div>
             </button>
           )
@@ -111,7 +93,7 @@ export function EmptyState({ onSuggestionClick, onViewChange }: EmptyStateProps)
             <button
               key={question}
               onClick={() => onSuggestionClick(question)}
-              className="flex items-center gap-3 px-4 py-3 rounded-xl border border-border bg-card hover:bg-secondary/40 hover:border-border/80 transition-all duration-150 text-left group"
+              className="flex items-center gap-3 px-4 py-3 rounded-xl border border-border bg-card shadow-[0_1px_2px_rgba(0,0,0,0.03)] hover:bg-card hover:border-border/80 hover:shadow-[0_4px_14px_rgba(0,0,0,0.06)] transition-[background-color,border-color,box-shadow,transform] duration-200 ease-[var(--ease-out)] active:scale-[0.98] text-left group"
             >
               <div className={cn("size-7 rounded-lg flex items-center justify-center shrink-0 bg-secondary group-hover:bg-secondary/80 transition-colors")}>
                 <Icon className="size-3.5 text-muted-foreground" />

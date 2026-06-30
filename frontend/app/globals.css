@@ -28,6 +28,10 @@
   --chart-4: oklch(0.828 0.189 84.429);
   --chart-5: oklch(0.769 0.188 70.08);
   --radius: 0.75rem;
+  /* Motion — strong custom easings. The built-in CSS easings are too weak;
+     these give animations the punch that makes them feel intentional. */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.45 0.2 25);
@@ -136,4 +140,66 @@
 /* iOS safe area padding for the bottom nav */
 .safe-area-pb {
   padding-bottom: max(env(safe-area-inset-bottom), 8px);
+}
+
+/* Chat message entrance — subtle rise + fade. Plays once on mount (rows are
+   keyed by message id), so it never replays while a reply streams in. */
+@keyframes message-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes message-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-message-in {
+  animation: message-in 360ms var(--ease-out) both;
+}
+
+/* Reduced motion: keep the fade for continuity, drop the movement. */
+@media (prefers-reduced-motion: reduce) {
+  .animate-message-in {
+    animation: message-fade 240ms var(--ease-out) both;
+  }
+}
+
+/* Stagger helper — items fade up in sequence; set animation-delay inline. */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.stagger-item {
+  opacity: 0;
+  animation: fade-in-up 320ms var(--ease-out) forwards;
+}
+
+/* Global reduced-motion safety net — collapse motion app-wide for users who
+   ask for it. Component-level rules above can still opt back into a gentle fade. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .stagger-item {
+    opacity: 1;
+  }
 }

@@ -44,14 +44,14 @@ function FeedbackButtons({ onFeedback }: { onFeedback: (rating: "up" | "down") =
       <button
         onClick={() => handle("up")}
         aria-label="Helpful"
-        className="p-1.5 rounded-md text-muted-foreground/40 hover:text-emerald-500 hover:bg-emerald-500/10 transition-colors"
+        className="p-1.5 rounded-md text-muted-foreground/40 hover:text-emerald-500 hover:bg-emerald-500/10 transition-[color,background-color,transform] duration-150 ease-[var(--ease-out)] active:scale-90"
       >
         <ThumbsUp className="size-3.5" />
       </button>
       <button
         onClick={() => handle("down")}
         aria-label="Not helpful"
-        className="p-1.5 rounded-md text-muted-foreground/40 hover:text-red-400 hover:bg-red-400/10 transition-colors"
+        className="p-1.5 rounded-md text-muted-foreground/40 hover:text-red-400 hover:bg-red-400/10 transition-[color,background-color,transform] duration-150 ease-[var(--ease-out)] active:scale-90"
       >
         <ThumbsDown className="size-3.5" />
       </button>
@@ -97,7 +97,8 @@ function Sources({ sources }: { sources: Source[] }) {
           target="_blank"
           rel="noopener noreferrer"
           title={s.section ? `${formatTitle(s)} — ${s.section}` : formatTitle(s)}
-          className="group inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-border bg-secondary/50 hover:bg-secondary hover:border-border/80 transition-all text-xs text-muted-foreground hover:text-foreground max-w-[240px]"
+          style={{ animationDelay: `${i * 45}ms` }}
+          className="stagger-item group inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-border bg-secondary/50 hover:bg-secondary hover:border-border/80 transition-[background-color,border-color,color,transform] duration-150 ease-[var(--ease-out)] active:scale-[0.98] text-xs text-muted-foreground hover:text-foreground max-w-[240px]"
         >
           <span className="flex flex-col min-w-0">
             <span className="truncate capitalize">{formatTitle(s)}</span>
@@ -119,8 +120,8 @@ export function ChatMessage({ role, content, sources, onFeedback, children }: Ch
 
   if (role === "user") {
     return (
-      <div className="flex justify-end">
-        <div className="max-w-[75%] md:max-w-[60%] rounded-2xl rounded-br-sm px-4 py-3 bg-foreground text-background">
+      <div className="flex justify-end animate-message-in">
+        <div className="max-w-[75%] md:max-w-[60%] rounded-2xl rounded-br-sm px-4 py-3 bg-foreground text-background shadow-[0_2px_8px_rgba(0,0,0,0.12)]">
           <p className="text-sm leading-relaxed whitespace-pre-wrap">{content}</p>
         </div>
       </div>
@@ -128,9 +129,9 @@ export function ChatMessage({ role, content, sources, onFeedback, children }: Ch
   }
 
   return (
-    <div className="flex gap-3">
+    <div className="flex gap-3 animate-message-in">
       <div className={cn(
-        "shrink-0 size-6 rounded-md flex items-center justify-center mt-0.5 text-[10px] font-bold text-white",
+        "shrink-0 size-6 rounded-md flex items-center justify-center mt-0.5 text-[10px] font-bold text-white shadow-sm ring-1 ring-black/5",
         theme.bgClass
       )}>
         Q

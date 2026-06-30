@@ -9,9 +9,10 @@ interface HeaderProps {
   isDark: boolean
   onToggleDark: () => void
   onOpenHistory?: () => void
+  onHome?: () => void
 }
 
-export function Header({ isDark, onToggleDark, onOpenHistory }: HeaderProps) {
+export function Header({ isDark, onToggleDark, onOpenHistory, onHome }: HeaderProps) {
   const { theme } = useCampus()
   const { isSignedIn, isLoaded } = useUser()
 
@@ -19,9 +20,14 @@ export function Header({ isDark, onToggleDark, onOpenHistory }: HeaderProps) {
     <header className="h-12 shrink-0 flex items-center justify-between px-4 border-b border-border/40 bg-card">
       {/* Wordmark — hidden on mobile (bottom nav handles nav) */}
       <div className="hidden md:flex items-center gap-1.5">
-        <span className="text-sm font-semibold tracking-tight text-foreground select-none">
+        <button
+          type="button"
+          onClick={onHome}
+          aria-label="Back to home"
+          className="text-sm font-semibold tracking-tight text-foreground select-none cursor-pointer transition-opacity duration-150 ease-[var(--ease-out)] hover:opacity-70 active:scale-[0.98]"
+        >
           Campus<span className={theme.textClass}>Q</span>
-        </span>
+        </button>
         <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-secondary text-muted-foreground select-none">
           beta
         </span>
@@ -29,9 +35,14 @@ export function Header({ isDark, onToggleDark, onOpenHistory }: HeaderProps) {
 
       {/* Mobile: just the wordmark centered */}
       <div className="md:hidden flex items-center gap-1.5">
-        <span className="text-sm font-semibold tracking-tight text-foreground select-none">
+        <button
+          type="button"
+          onClick={onHome}
+          aria-label="Back to home"
+          className="text-sm font-semibold tracking-tight text-foreground select-none cursor-pointer transition-opacity duration-150 ease-[var(--ease-out)] hover:opacity-70 active:scale-[0.98]"
+        >
           Campus<span className={theme.textClass}>Q</span>
-        </span>
+        </button>
         <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-secondary text-muted-foreground select-none">
           beta
         </span>

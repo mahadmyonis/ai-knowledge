@@ -206,7 +206,7 @@ function HeroCard({ deadline, onClick }: { deadline: Deadline & { days: number }
     <button
       onClick={onClick}
       className={cn(
-        "flex-1 min-w-0 rounded-2xl border border-border p-4 flex flex-col gap-3 text-left hover:border-border/80 hover:shadow-sm transition-all",
+        "flex-1 min-w-0 rounded-2xl border border-border p-4 flex flex-col gap-3 text-left hover:border-border/80 hover:shadow-sm transition-[border-color,box-shadow,transform] duration-200 ease-[var(--ease-out)] active:scale-[0.98]",
         deadline.days <= 7 ? "border-red-500/30 bg-red-500/5" : "bg-card"
       )}>
       <span className={cn("text-[10px] font-semibold uppercase tracking-widest", cat.color)}>
@@ -409,7 +409,7 @@ export function DeadlineTracker({ onAsk }: { onAsk?: (question: string) => void 
               key={term}
               onClick={() => setActiveFilter(term)}
               className={cn(
-                "px-3 py-1.5 rounded-lg text-xs font-medium transition-all",
+                "px-3 py-1.5 rounded-lg text-xs font-medium transition-[color,background-color,border-color,transform] duration-150 ease-[var(--ease-out)] active:scale-[0.97]",
                 activeFilter === term
                   ? "bg-foreground text-background"
                   : "border border-border text-muted-foreground hover:text-foreground hover:bg-secondary"
@@ -429,7 +429,7 @@ export function DeadlineTracker({ onAsk }: { onAsk?: (question: string) => void 
                 key={cat}
                 onClick={() => setActiveCat(cat)}
                 className={cn(
-                  "px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all capitalize",
+                  "px-2.5 py-1 rounded-lg text-[11px] font-medium transition-[color,background-color,border-color,transform] duration-150 ease-[var(--ease-out)] active:scale-[0.97] capitalize",
                   activeCat === cat
                     ? config ? `${config.bg} ${config.color} border border-current/20` : "bg-foreground text-background"
                     : "border border-border text-muted-foreground hover:text-foreground hover:bg-secondary"

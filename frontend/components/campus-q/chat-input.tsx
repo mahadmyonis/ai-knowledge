@@ -93,7 +93,7 @@ export function ChatInput({ value, onChange, onSubmit, disabled, isHome }: ChatI
 
         {/* Input box */}
         <div className={cn(
-          "relative flex items-end rounded-2xl border bg-card transition-all duration-200",
+          "relative flex items-end rounded-2xl border bg-card transition-[box-shadow,border-color] duration-200 ease-[var(--ease-out)]",
           isHome
             ? "shadow-[0_2px_20px_rgba(0,0,0,0.06)] border-border/70 hover:shadow-[0_4px_24px_rgba(0,0,0,0.09)] hover:border-border"
             : "shadow-sm border-border/60",
@@ -115,9 +115,9 @@ export function ChatInput({ value, onChange, onSubmit, disabled, isHome }: ChatI
             onClick={() => onSubmit()}
             disabled={!canSubmit}
             className={cn(
-              "absolute right-2.5 bottom-2.5 size-8 rounded-xl flex items-center justify-center transition-all duration-150",
+              "absolute right-2.5 bottom-2.5 size-8 rounded-xl flex items-center justify-center transition-[transform,opacity,background-color] duration-150 ease-[var(--ease-out)]",
               canSubmit
-                ? cn(theme.bgClass, "text-white shadow-sm hover:opacity-85 hover:scale-105 active:scale-95")
+                ? cn(theme.bgClass, "text-white shadow-sm hover:opacity-85 active:scale-90")
                 : "bg-secondary text-muted-foreground/25 cursor-not-allowed"
             )}
           >
