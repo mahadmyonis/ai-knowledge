@@ -117,6 +117,33 @@ export default function AboutPage() {
           </div>
         </section>
 
+        {/* Retriive — the company behind CampusQ */}
+        <section className="grid grid-cols-1 md:grid-cols-2 gap-10 items-start">
+          <div>
+            <p className="text-xs font-semibold text-zinc-400 uppercase tracking-widest mb-5">The company behind it</p>
+            <h2 className="text-3xl font-bold text-zinc-900 tracking-tight leading-tight">
+              CampusQ is built by <span className="text-red-600">Retriive</span>.
+            </h2>
+          </div>
+          <div className="flex flex-col gap-5 text-[15px] text-zinc-500 leading-relaxed">
+            <p>
+              Retriive builds AI solutions for institutions and enterprises — systems that
+              <span className="text-zinc-700 font-medium"> eliminate informational silos</span> and
+              <span className="text-zinc-700 font-medium"> optimize administrative efficiency</span> across
+              an organization.
+            </p>
+            <p>
+              The problem is the same everywhere: the answer already exists, but it's buried across PDFs,
+              portals, inboxes, and people's heads — so the person who needs it can't find it. Retriive
+              unifies that scattered knowledge and puts a precise, source-grounded answer one question away.
+            </p>
+            <p>
+              CampusQ is that idea applied to universities — the first of many domains where Retriive turns
+              fragmented information into instant, trustworthy answers.
+            </p>
+          </div>
+        </section>
+
         {/* Disclaimer + Contact side by side */}
         <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="rounded-2xl border border-zinc-100 bg-zinc-50 p-6 flex flex-col gap-3">
