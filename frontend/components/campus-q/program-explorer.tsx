@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Loader2, BookOpen, ArrowLeft, ChevronRight, ChevronDown, GraduationCap, Map } from "lucide-react"
+import { Loader2, BookOpen, ArrowLeft, ChevronDown, GraduationCap, Map, Search } from "lucide-react"
 import { DegreePlan } from "./degree-plan"
 import { Button } from "@/components/ui/button"
 import ReactMarkdown from "react-markdown"
@@ -586,9 +586,8 @@ function abbrevColors(ab: string): BadgeColors {
 
 type ViewState =
   | { screen: "directory" }
+  | { screen: "streams"; program: Program }
   | { screen: "detail"; program: Program; streamLabel?: string; queryName: string }
-
-const ALL_PROGRAMS_SORTED = [...ALL_PROGRAMS].sort((a, b) => a.name.localeCompare(b.name))
 
 export function ProgramExplorer() {
   useCampus()
@@ -598,7 +597,8 @@ export function ProgramExplorer() {
   const [result, setResult] = React.useState("")
   const [structured, setStructured] = React.useState<{ groups: ReqGroup[]; variant: string } | null>(null)
   const [loading, setLoading] = React.useState(false)
-  const [selectedDept, setSelectedDept] = React.useState<Program | null>(null)
+  const [search, setSearch] = React.useState("")
+  const [selectedFaculty, setSelectedFaculty] = React.useState<string | null>(null)
   // plan state — tracks chosen slug+variant for DegreePlan
   const [planSlug, setPlanSlug]       = React.useState("")
   const [planVariant, setPlanVariant] = React.useState("")
@@ -679,7 +679,12 @@ export function ProgramExplorer() {
     }
   }
 
-  const handleProgramClick = (program: Program) => {
+  // Multi-option programs open a stream picker; single-option programs jump to requirements.
+  const openProgram = (program: Program) => {
+    if (program.streams && program.streams.length > 0) {
+      setView({ screen: "streams", program })
+      return
+    }
     setView({ screen: "detail", program, queryName: program.name })
     loadRequirements(program.name)
   }
@@ -689,10 +694,65 @@ export function ProgramExplorer() {
     loadRequirements(stream.queryName)
   }
 
-  const goBack = () => {
+  const goToDirectory = () => {
     setView({ screen: "directory" })
     setResult("")
     setStructured(null)
+  }
+
+  // Back from a detail view: return to the stream picker if the program has streams,
+  // otherwise all the way to the directory.
+  const goBackFromDetail = (program: Program) => {
+    if (program.streams && program.streams.length > 0) {
+      setView({ screen: "streams", program })
+    } else {
+      setView({ screen: "directory" })
+    }
+    setResult("")
+    setStructured(null)
+  }
+
+  // ── Streams / options picker ──────────────────────────────────────────────
+  if (view.screen === "streams") {
+    const { program } = view
+    const faculty = FACULTIES.find((f) => f.name === program.faculty)
+    return (
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" onClick={goToDirectory}>
+            <ArrowLeft className="size-4" />
+          </Button>
+          <div className="flex-1 min-w-0">
+            <p className={cn("text-[10px] font-semibold uppercase tracking-widest mb-0.5", faculty?.color)}>
+              {program.faculty}
+            </p>
+            <h2 className="text-base font-semibold leading-tight truncate">{program.name}</h2>
+            <p className="text-xs text-muted-foreground mt-0.5">{program.description}</p>
+          </div>
+        </div>
+
+        <p className="text-xs text-muted-foreground">Choose an option to see its requirements.</p>
+
+        <div className="grid grid-cols-2 gap-2">
+          {program.streams!.map((stream) => {
+            const ab = degreeAbbrev(program.faculty, stream.label)
+            const colors = abbrevColors(ab)
+            return (
+              <button
+                key={stream.queryName}
+                onClick={() => handleStreamClick(program, stream)}
+                className="group flex flex-col items-start gap-2 rounded-xl border border-border bg-card hover:border-primary/40 hover:bg-secondary/30 hover:-translate-y-px active:scale-[0.98] transition-[transform,border-color,background-color] duration-200 ease-[var(--ease-out)] text-left p-3"
+              >
+                <span className={cn("inline-block text-[10px] font-bold font-mono px-2 py-0.5 rounded tracking-wide", colors.bg, colors.text)}>
+                  {ab}
+                </span>
+                <span className="text-xs font-medium text-foreground leading-snug line-clamp-3">{stream.label}</span>
+              </button>
+            )
+          })}
+        </div>
+      </div>
+    )
   }
 
   // ── Detail view ───────────────────────────────────────────────────────────
@@ -705,7 +765,7 @@ export function ProgramExplorer() {
       <div className="flex flex-col gap-4">
         {/* Back + title */}
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={goBack}>
+          <Button variant="ghost" size="icon" onClick={() => goBackFromDetail(program)}>
             <ArrowLeft className="size-4" />
           </Button>
           <div className="flex-1 min-w-0">
@@ -787,17 +847,14 @@ export function ProgramExplorer() {
   }
 
   // ── Directory ─────────────────────────────────────────────────────────────
-  const deptFaculty = selectedDept
-    ? FACULTIES.find((f) => f.name === selectedDept.faculty)!
-    : null
-
-  const handleDeptChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const name = e.target.value
-    if (!name) { setSelectedDept(null); return }
-    const prog = ALL_PROGRAMS_SORTED.find((p) => p.name === name)
-    if (!prog) return
-    setSelectedDept(prog)
-  }
+  const q = search.trim().toLowerCase()
+  const sections = FACULTIES
+    .filter((f) => !selectedFaculty || f.name === selectedFaculty)
+    .map((f) => ({
+      faculty: f,
+      matches: q ? f.programs.filter((p) => p.name.toLowerCase().includes(q)) : f.programs,
+    }))
+    .filter((s) => s.matches.length > 0)
 
   return (
     <div className="flex flex-col gap-5">
@@ -807,72 +864,84 @@ export function ProgramExplorer() {
         <p className="text-sm text-muted-foreground">{ALL_PROGRAMS.length} Carleton programs</p>
       </div>
 
-      {/* Department dropdown */}
-      <div className="flex flex-col gap-1.5">
-        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
-          Department
-        </label>
-        <div className="relative">
-          <select
-            value={selectedDept?.name ?? ""}
-            onChange={handleDeptChange}
-            className="w-full appearance-none rounded-xl border border-border bg-card px-4 py-2.5 pr-9 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
-          >
-            <option value="">Select department…</option>
-            {ALL_PROGRAMS_SORTED.map((p) => (
-              <option key={p.name} value={p.name}>{p.name}</option>
-            ))}
-          </select>
-          <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground/50" />
-        </div>
+      {/* Search */}
+      <div className="relative">
+        <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground/50" />
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search programs…"
+          className="w-full rounded-xl border border-border bg-card pl-9 pr-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-primary/20"
+        />
       </div>
 
-      {/* Program cards for selected department */}
-      {selectedDept && (
-        <div className="flex flex-col gap-3">
-          {deptFaculty && (
-            <p className={cn("text-[10px] font-semibold uppercase tracking-widest", deptFaculty.color)}>
-              {deptFaculty.name}
-            </p>
+      {/* Faculty pills */}
+      <div className="flex flex-wrap gap-1.5">
+        <button
+          onClick={() => setSelectedFaculty(null)}
+          className={cn(
+            "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-[background-color,border-color,color,transform] duration-150 ease-[var(--ease-out)] active:scale-[0.97]",
+            !selectedFaculty
+              ? "border-primary/40 bg-primary/10 text-foreground"
+              : "border-border bg-card text-muted-foreground hover:text-foreground"
           )}
-          {selectedDept.streams && selectedDept.streams.length > 0 ? (
-            <div className="grid grid-cols-2 gap-2">
-              {selectedDept.streams.map((stream) => {
-                const ab = degreeAbbrev(selectedDept.faculty, stream.label)
-                const colors = abbrevColors(ab)
-                return (
-                  <button
-                    key={stream.queryName}
-                    onClick={() => handleStreamClick(selectedDept, stream)}
-                    className="group flex flex-col items-start gap-2 rounded-xl border border-border bg-card hover:border-primary/40 hover:bg-secondary/30 hover:-translate-y-px active:scale-[0.98] transition-[transform,border-color,background-color] duration-200 ease-[var(--ease-out)] text-left p-3"
-                  >
-                    <span className={cn("inline-block text-[10px] font-bold font-mono px-2 py-0.5 rounded tracking-wide", colors.bg, colors.text)}>
-                      {ab}
-                    </span>
-                    <span className="text-xs font-medium text-foreground leading-snug line-clamp-2">{stream.label}</span>
-                  </button>
-                )
-              })}
-            </div>
-          ) : (
+        >
+          All
+        </button>
+        {FACULTIES.map((f) => {
+          const active = selectedFaculty === f.name
+          return (
             <button
-              onClick={() => handleProgramClick(selectedDept)}
-              className="group flex flex-col items-start gap-2 rounded-xl border border-border bg-card hover:border-primary/40 hover:bg-secondary/30 hover:-translate-y-px active:scale-[0.98] transition-[transform,border-color,background-color] duration-200 ease-[var(--ease-out)] text-left p-3 w-full"
+              key={f.name}
+              onClick={() => setSelectedFaculty(active ? null : f.name)}
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-[background-color,border-color,color,transform] duration-150 ease-[var(--ease-out)] active:scale-[0.97]",
+                active
+                  ? "border-primary/40 bg-primary/10 text-foreground"
+                  : "border-border bg-card text-muted-foreground hover:text-foreground"
+              )}
             >
-              {(() => {
-                const ab = degreeAbbrev(selectedDept.faculty, selectedDept.name)
-                const colors = abbrevColors(ab)
-                return (
-                  <>
-                    <span className={cn("inline-block text-[10px] font-bold font-mono px-2 py-0.5 rounded tracking-wide", colors.bg, colors.text)}>
-                      {ab}
-                    </span>
-                    <span className="text-sm font-medium text-foreground">{selectedDept.name}</span>
-                  </>
-                )
-              })()}
+              <span className={cn("size-2 rounded-full", f.dotColor)} />
+              {f.short}
             </button>
-          )}
+          )
+        })}
+      </div>
+
+      {/* Grouped programs */}
+      {sections.length === 0 ? (
+        <div className="flex flex-col items-center justify-center gap-2 py-16 text-center">
+          <p className="text-sm font-medium text-foreground">No programs match “{search}”</p>
+          <p className="text-xs text-muted-foreground">Try a different search or faculty.</p>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-7">
+          {sections.map(({ faculty, matches }) => (
+            <div key={faculty.name} className="flex flex-col gap-3">
+              {/* Faculty heading */}
+              <div className="flex items-center gap-2">
+                <span className={cn("size-2 rounded-full", faculty.dotColor)} />
+                <p className={cn("text-[11px] font-semibold uppercase tracking-widest", faculty.color)}>
+                  {faculty.name}
+                </p>
+                <span className="text-[11px] text-muted-foreground/50">{matches.length}</span>
+              </div>
+              {/* Program cards */}
+              <div className="grid grid-cols-2 gap-2">
+                {matches.map((p) => {
+                  const program: Program = { ...p, faculty: faculty.name }
+                  return (
+                    <ProgramCard
+                      key={p.name}
+                      program={program}
+                      faculty={faculty}
+                      onClick={() => openProgram(program)}
+                    />
+                  )
+                })}
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>
