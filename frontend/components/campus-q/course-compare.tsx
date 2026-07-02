@@ -18,7 +18,7 @@ interface CourseData {
 
 const ACCENTS = [
   { top: "bg-blue-500",    text: "text-blue-600 dark:text-blue-400",    bg: "bg-blue-50 dark:bg-blue-950/30" },
-  { top: "bg-primary",     text: "text-primary",                        bg: "bg-red-50 dark:bg-red-950/30" },
+  { top: "bg-primary",     text: "text-primary",                        bg: "bg-primary-soft" },
   { top: "bg-emerald-500", text: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-950/30" },
 ]
 
@@ -79,7 +79,7 @@ export function CourseCompare({ initialCourses = [] }: { initialCourses?: Course
         </Button>
       </div>
 
-      {error && <p className="text-xs text-red-500">{error}</p>}
+      {error && <p className="text-xs text-destructive">{error}</p>}
 
       {courses.length === 0 ? (
         <div className="flex flex-col items-center gap-3 py-14 text-muted-foreground">

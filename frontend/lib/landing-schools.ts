@@ -1,14 +1,13 @@
 export type SchoolId = "carleton" | "uottawa" | "uoft" | "waterloo" | "western"
 
+// Accent colors live in globals.css as [data-school] token themes.
+// Components render with token classes (bg-primary, text-primary-ink, …)
+// and the landing root's data-school attribute swaps the palette.
 export interface SchoolConfig {
   id: SchoolId
   name: string
   shortName: string
   live: boolean
-  accent: string
-  accentHover: string
-  accentText: string
-  accentBg: string
   badge: string
   demoMessages: { role: "user" | "assistant"; text: string }[]
   stats: { value: string; label: string }[]
@@ -20,10 +19,6 @@ export const SCHOOLS: Record<SchoolId, SchoolConfig> = {
     name: "Carleton University",
     shortName: "Carleton",
     live: true,
-    accent: "bg-red-600",
-    accentHover: "hover:bg-red-700",
-    accentText: "text-red-600",
-    accentBg: "bg-red-50",
     badge: "Live for Carleton students",
     demoMessages: [
       { role: "user", text: "Can I take COMP 2401 without finishing COMP 1405?" },
@@ -43,10 +38,6 @@ export const SCHOOLS: Record<SchoolId, SchoolConfig> = {
     name: "University of Ottawa",
     shortName: "uOttawa",
     live: false,
-    accent: "bg-rose-700",
-    accentHover: "hover:bg-rose-800",
-    accentText: "text-rose-700",
-    accentBg: "bg-rose-50",
     badge: "Coming soon for uOttawa students",
     demoMessages: [
       { role: "user", text: "What's the prerequisite for ITI 1121?" },
@@ -59,10 +50,6 @@ export const SCHOOLS: Record<SchoolId, SchoolConfig> = {
     name: "University of Toronto",
     shortName: "UofT",
     live: false,
-    accent: "bg-blue-900",
-    accentHover: "hover:bg-blue-800",
-    accentText: "text-blue-900",
-    accentBg: "bg-blue-50",
     badge: "Coming soon for UofT students",
     demoMessages: [
       { role: "user", text: "What are the prereqs for CSC236?" },
@@ -75,10 +62,6 @@ export const SCHOOLS: Record<SchoolId, SchoolConfig> = {
     name: "University of Waterloo",
     shortName: "Waterloo",
     live: false,
-    accent: "bg-amber-500",
-    accentHover: "hover:bg-amber-600",
-    accentText: "text-amber-600",
-    accentBg: "bg-amber-50",
     badge: "Coming soon for Waterloo students",
     demoMessages: [
       { role: "user", text: "Is CS 135 a prereq for CS 136?" },
@@ -91,10 +74,6 @@ export const SCHOOLS: Record<SchoolId, SchoolConfig> = {
     name: "Western University",
     shortName: "Western",
     live: false,
-    accent: "bg-purple-700",
-    accentHover: "hover:bg-purple-800",
-    accentText: "text-purple-700",
-    accentBg: "bg-purple-50",
     badge: "Coming soon for Western students",
     demoMessages: [
       { role: "user", text: "What are the prerequisites for CS 2210?" },

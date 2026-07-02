@@ -114,7 +114,7 @@ function CourseNodeCard({ data }: NodeProps) {
   }
 
   const bg =
-    status === "completed" ? "bg-emerald-500 border-emerald-600 text-white" :
+    status === "completed" ? "bg-success border-success text-white" :
     status === "available"  ? "bg-primary/10 border-primary text-foreground" :
                               "bg-card border-border text-muted-foreground"
 
@@ -306,7 +306,7 @@ export function DegreePlan({ slug, variant }: { slug: string; variant: string })
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <span className="size-2.5 rounded-full bg-emerald-500 inline-block" /> Completed
+            <span className="size-2.5 rounded-full bg-success inline-block" /> Completed
           </span>
           <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <span className="size-2.5 rounded-full bg-primary/30 border border-primary inline-block" /> Can take now
@@ -328,7 +328,7 @@ export function DegreePlan({ slug, variant }: { slug: string; variant: string })
       {/* Progress bar */}
       <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
         <div
-          className="h-full bg-emerald-500 transition-[width] duration-500 ease-out rounded-full"
+          className="h-full bg-success transition-[width] duration-500 ease-out rounded-full"
           style={{ width: totalCount ? `${(doneCount / totalCount) * 100}%` : "0%" }}
         />
       </div>

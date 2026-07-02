@@ -4,40 +4,28 @@ import * as React from "react"
 
 export type Campus = "carleton" | "uottawa" | "mcgill"
 
+// All accent colors come from the token layer in globals.css.
+// The provider sets data-school on its wrapper, which swaps the
+// --primary token family; these classes just reference the tokens.
 interface CampusTheme {
   name: string
-  primaryColor: string
   bgClass: string
   hoverBgClass: string
   borderClass: string
   textClass: string
 }
 
+const TOKEN_THEME: Omit<CampusTheme, "name"> = {
+  bgClass: "bg-primary",
+  hoverBgClass: "hover:bg-primary-strong",
+  borderClass: "border-primary",
+  textClass: "text-primary",
+}
+
 export const campusThemes: Record<Campus, CampusTheme> = {
-  carleton: {
-    name: "Carleton University",
-    primaryColor: "bg-red-700",
-    bgClass: "bg-red-700",
-    hoverBgClass: "hover:bg-red-800",
-    borderClass: "border-red-700",
-    textClass: "text-red-700",
-  },
-  uottawa: {
-    name: "uOttawa",
-    primaryColor: "bg-red-600",
-    bgClass: "bg-red-600",
-    hoverBgClass: "hover:bg-red-700",
-    borderClass: "border-red-600",
-    textClass: "text-red-600",
-  },
-  mcgill: {
-    name: "McGill",
-    primaryColor: "bg-red-800",
-    bgClass: "bg-red-800",
-    hoverBgClass: "hover:bg-red-900",
-    borderClass: "border-red-800",
-    textClass: "text-red-800",
-  },
+  carleton: { name: "Carleton University", ...TOKEN_THEME },
+  uottawa: { name: "uOttawa", ...TOKEN_THEME },
+  mcgill: { name: "McGill", ...TOKEN_THEME },
 }
 
 interface CampusContextType {
@@ -54,7 +42,9 @@ export function CampusProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <CampusContext.Provider value={{ selectedCampus, setSelectedCampus, theme }}>
-      {children}
+      <div data-school={selectedCampus} className="contents">
+        {children}
+      </div>
     </CampusContext.Provider>
   )
 }

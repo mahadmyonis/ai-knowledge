@@ -94,9 +94,10 @@ export function ChatInput({ value, onChange, onSubmit, disabled, isHome }: ChatI
         {/* Input box */}
         <div className={cn(
           "relative flex items-end rounded-2xl border bg-card transition-[box-shadow,border-color] duration-200 ease-[var(--ease-out)]",
+          "focus-within:border-primary/60 focus-within:ring-[3px] focus-within:ring-primary/15",
           isHome
-            ? "shadow-[0_2px_20px_rgba(0,0,0,0.06)] border-border/70 hover:shadow-[0_4px_24px_rgba(0,0,0,0.09)] hover:border-border"
-            : "shadow-sm border-border/60",
+            ? "shadow-raised border-border/70 hover:shadow-overlay hover:border-border"
+            : "shadow-resting border-border/60",
           value && !isHome && "border-border/80"
         )}>
           <textarea
@@ -117,7 +118,7 @@ export function ChatInput({ value, onChange, onSubmit, disabled, isHome }: ChatI
             className={cn(
               "absolute right-2.5 bottom-2.5 size-8 rounded-xl flex items-center justify-center transition-[transform,opacity,background-color] duration-150 ease-[var(--ease-out)]",
               canSubmit
-                ? cn(theme.bgClass, "text-white shadow-sm hover:opacity-85 active:scale-90")
+                ? cn(theme.bgClass, theme.hoverBgClass, "text-primary-foreground shadow-resting active:scale-90")
                 : "bg-secondary text-muted-foreground/25 cursor-not-allowed"
             )}
           >
@@ -126,7 +127,7 @@ export function ChatInput({ value, onChange, onSubmit, disabled, isHome }: ChatI
         </div>
 
         {/* Disclaimer */}
-        <p className="text-[11px] text-center text-muted-foreground/30 mt-2.5 tracking-wide">
+        <p className="text-[11px] text-center text-muted-foreground/60 mt-2.5 tracking-wide">
           {isHome
             ? "Independent tool — not affiliated with Carleton University"
             : "CampusQ is AI and can make mistakes — verify important decisions with your advisor"          }

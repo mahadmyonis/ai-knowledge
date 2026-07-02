@@ -141,7 +141,7 @@ function MobileSessionList({
                   </button>
                   <button
                     onClick={() => onDelete(session.id)}
-                    className="p-1 text-muted-foreground/40 hover:text-red-400 transition-colors rounded shrink-0"
+                    className="p-1 text-muted-foreground/40 hover:text-destructive transition-colors rounded shrink-0"
                   >
                     <Trash2 className="size-3" />
                   </button>

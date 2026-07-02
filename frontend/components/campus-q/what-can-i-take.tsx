@@ -114,7 +114,7 @@ export function WhatCanITake() {
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary rounded-full text-sm font-mono font-medium"
               >
                 {code}
-                <button onClick={() => removeCourse(code)} className="hover:text-red-500 transition-colors">
+                <button onClick={() => removeCourse(code)} className="hover:text-destructive transition-colors">
                   <X className="size-3" />
                 </button>
               </span>
