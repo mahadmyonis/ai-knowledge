@@ -7,11 +7,9 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
 interface WaitlistCtaProps {
   school: string
-  accent: string
-  accentHover: string
 }
 
-export function WaitlistCta({ school, accent, accentHover }: WaitlistCtaProps) {
+export function WaitlistCta({ school }: WaitlistCtaProps) {
   const [email, setEmail] = React.useState("")
   const [joined, setJoined] = React.useState(false)
   const [submitting, setSubmitting] = React.useState(false)
@@ -19,8 +17,8 @@ export function WaitlistCta({ school, accent, accentHover }: WaitlistCtaProps) {
 
   if (joined) {
     return (
-      <div className="inline-flex items-center gap-2 text-sm font-medium text-zinc-700">
-        <Check className="size-4 text-green-600" />
+      <div className="inline-flex items-center gap-2 text-sm font-medium text-secondary-foreground">
+        <Check className="size-4 text-success" />
         You're on the list — we'll email you when {school} is ready.
       </div>
     )
@@ -59,18 +57,18 @@ export function WaitlistCta({ school, accent, accentHover }: WaitlistCtaProps) {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="you@school.ca"
-          className="text-sm px-4 py-3 rounded-xl border border-zinc-200 bg-white outline-none focus:border-zinc-400 transition-colors w-56"
+          className="text-sm px-4 py-3 rounded-xl border border-input bg-card outline-none focus:border-primary focus:ring-[3px] focus:ring-primary/15 transition-[border-color,box-shadow] w-56"
         />
         <button
           type="submit"
           disabled={submitting}
-          className={`inline-flex items-center gap-2 ${accent} ${accentHover} text-white text-sm font-semibold px-5 py-3 rounded-xl transition-colors shrink-0 disabled:opacity-60`}
+          className="inline-flex items-center gap-2 bg-primary hover:bg-primary-strong text-primary-foreground text-sm font-semibold px-5 py-3 rounded-xl transition-colors shrink-0 disabled:opacity-60 shadow-raised"
         >
           {submitting ? "Joining…" : "Join waitlist"}
           <ArrowRight className="size-4" />
         </button>
       </div>
-      {error && <p className="text-xs text-red-600">{error}</p>}
+      {error && <p className="text-xs text-destructive">{error}</p>}
     </form>
   )
 }

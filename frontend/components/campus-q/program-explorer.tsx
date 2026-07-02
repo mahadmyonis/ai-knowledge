@@ -335,9 +335,9 @@ const FACULTIES: {
   {
     name: "Health Sciences",
     short: "Health",
-    color: "text-red-500 dark:text-red-400",
-    bgColor: "bg-red-500",
-    dotColor: "bg-red-500",
+    color: "text-primary",
+    bgColor: "bg-primary",
+    dotColor: "bg-primary",
     programs: [
       { name: "Health Sciences", description: "Health systems, policy, and interdisciplinary health studies" },
       { name: "Nursing", description: "Collaborative nursing program with health and patient care" },
@@ -405,11 +405,11 @@ function friendlySection(instruction: string): { title: string; tone: string } {
   const t = instruction.toLowerCase()
   if (/free elective/.test(t)) return { title: "Free Electives", tone: "bg-amber-500" }
   if (/not (included )?in the major|not in communication|in electives not/.test(t)) return { title: "Electives", tone: "bg-blue-500" }
-  if (/major cgpa|included in the major|core/.test(t)) return { title: "Major Requirements", tone: "bg-red-500" }
-  if (/additional requirement/.test(t)) return { title: "Additional Requirements", tone: "bg-zinc-400" }
+  if (/major cgpa|included in the major|core/.test(t)) return { title: "Major Requirements", tone: "bg-primary" }
+  if (/additional requirement/.test(t)) return { title: "Additional Requirements", tone: "bg-muted-foreground/60" }
   // strip a leading "A. " / "1. " and a trailing credit note
   const cleaned = instruction.replace(/^[A-Z0-9]+\.\s*/, "").replace(/\s*\(\d.*$/, "").trim()
-  return { title: cleaned || "Requirements", tone: "bg-zinc-400" }
+  return { title: cleaned || "Requirements", tone: "bg-muted-foreground/60" }
 }
 
 interface Section { title: string; tone: string; credits: number | null; items: ReqGroup[]; courses: ReqCourse[] }
@@ -426,7 +426,7 @@ function buildSections(groups: ReqGroup[]): Section[] {
       sections.push(current)
     } else {
       if (!current) {
-        current = { title: "Requirements", tone: "bg-red-500", credits: null, items: [], courses: [] }
+        current = { title: "Requirements", tone: "bg-primary", credits: null, items: [], courses: [] }
         sections.push(current)
       }
       current.items.push(g)
@@ -574,8 +574,8 @@ type BadgeColors = { bg: string; text: string }
 function abbrevColors(ab: string): BadgeColors {
   if (ab.startsWith("B.Eng"))  return { bg: "bg-blue-100 dark:bg-blue-950",   text: "text-blue-700 dark:text-blue-300" }
   if (ab.startsWith("B.Sc"))   return { bg: "bg-emerald-100 dark:bg-emerald-950", text: "text-emerald-700 dark:text-emerald-300" }
-  if (ab.startsWith("B.C.S")) return { bg: "bg-red-100 dark:bg-red-950",    text: "text-red-700 dark:text-red-400" }
-  if (ab.startsWith("B.Cyber")) return { bg: "bg-red-100 dark:bg-red-950",  text: "text-red-700 dark:text-red-400" }
+  if (ab.startsWith("B.C.S")) return { bg: "bg-primary-soft", text: "text-primary-ink" }
+  if (ab.startsWith("B.Cyber")) return { bg: "bg-primary-soft", text: "text-primary-ink" }
   if (ab.startsWith("B.A"))    return { bg: "bg-amber-100 dark:bg-amber-950", text: "text-amber-700 dark:text-amber-400" }
   if (ab.startsWith("B.Com")) return { bg: "bg-purple-100 dark:bg-purple-950", text: "text-purple-700 dark:text-purple-400" }
   if (ab.startsWith("B.Math")) return { bg: "bg-indigo-100 dark:bg-indigo-950", text: "text-indigo-700 dark:text-indigo-400" }

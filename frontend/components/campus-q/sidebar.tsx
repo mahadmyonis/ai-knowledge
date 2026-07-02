@@ -108,8 +108,8 @@ export function Sidebar({
         <button
           onClick={onNewChat}
           className={cn(
-            "w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors",
-            "bg-foreground text-background hover:bg-foreground/90",
+            "w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors shadow-resting",
+            "bg-primary text-primary-foreground hover:bg-primary-strong",
             collapsed && "justify-center px-0"
           )}
         >
@@ -128,7 +128,7 @@ export function Sidebar({
             className={cn(
               "w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors",
               currentView === view
-                ? "bg-secondary text-foreground font-medium"
+                ? "bg-primary-soft text-primary-ink font-medium"
                 : "text-muted-foreground hover:text-foreground hover:bg-secondary/60",
               collapsed && "justify-center px-0"
             )}
@@ -200,7 +200,7 @@ export function Sidebar({
                             </button>
                             <button
                               onClick={(e) => { e.stopPropagation(); onDeleteSession(session.id) }}
-                              className="p-1 text-muted-foreground/50 hover:text-red-400 transition-colors rounded shrink-0"
+                              className="p-1 text-muted-foreground/50 hover:text-destructive transition-colors rounded shrink-0"
                             >
                               <Trash2 className="size-3" />
                             </button>

@@ -64,7 +64,7 @@ export function FeedbackModal({ open, onClose, lastQuery = "" }: FeedbackModalPr
 
         {submitted ? (
           <div className="flex flex-col items-center gap-3 py-6 text-center">
-            <CheckCircle className="size-10 text-green-500" />
+            <CheckCircle className="size-10 text-success" />
             <h3 className="text-lg font-semibold">Thanks for the feedback!</h3>
             <p className="text-sm text-muted-foreground">Your report helps us improve CampusQ.</p>
             <Button variant="outline" onClick={onClose} className="mt-2">Close</Button>
@@ -104,7 +104,7 @@ export function FeedbackModal({ open, onClose, lastQuery = "" }: FeedbackModalPr
               </div>
 
               {error && (
-                <p className="text-xs text-red-500 text-center">
+                <p className="text-xs text-destructive text-center">
                   Something went wrong. Please try again.
                 </p>
               )}

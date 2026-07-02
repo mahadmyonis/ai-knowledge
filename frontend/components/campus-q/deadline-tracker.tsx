@@ -78,8 +78,8 @@ const CATEGORY_CONFIG: Record<Category, { label: string; color: string; bg: stri
   registration: { label: "Registration", color: "text-blue-600 dark:text-blue-400",   bg: "bg-blue-500/10"   },
   withdrawal:   { label: "Withdrawal",   color: "text-orange-600 dark:text-orange-400", bg: "bg-orange-500/10" },
   exams:        { label: "Exams",        color: "text-purple-600 dark:text-purple-400", bg: "bg-purple-500/10" },
-  payment:      { label: "Payment",      color: "text-red-500 dark:text-red-400",      bg: "bg-red-500/10"    },
-  classes:      { label: "Classes",      color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-500/10" },
+  payment:      { label: "Payment",      color: "text-destructive dark:text-destructive",      bg: "bg-destructive/10"    },
+  classes:      { label: "Classes",      color: "text-success", bg: "bg-success/10" },
   holiday:      { label: "Holiday",      color: "text-muted-foreground",               bg: "bg-secondary"     },
 }
 
@@ -184,18 +184,18 @@ function googleCalUrl(title: string, dateStr: string): string {
 
 function UrgencyBadge({ days }: { days: number }) {
   if (days < 0) return <span className="text-[10px] text-muted-foreground/40">Passed</span>
-  if (days === 0) return <span className="text-[10px] font-bold text-red-500">Today</span>
-  if (days === 1) return <span className="text-[10px] font-bold text-red-500">Tomorrow</span>
-  if (days <= 7)  return <span className="text-[10px] font-semibold text-red-500">{days} days</span>
-  if (days <= 30) return <span className="text-[10px] font-semibold text-amber-500">{days} days</span>
+  if (days === 0) return <span className="text-[10px] font-bold text-destructive">Today</span>
+  if (days === 1) return <span className="text-[10px] font-bold text-destructive">Tomorrow</span>
+  if (days <= 7)  return <span className="text-[10px] font-semibold text-destructive">{days} days</span>
+  if (days <= 30) return <span className="text-[10px] font-semibold text-warning">{days} days</span>
   return <span className="text-[10px] text-muted-foreground/60">{days} days</span>
 }
 
 function UrgencyDot({ days }: { days: number }) {
   if (days < 0)   return <span className="size-2 rounded-full bg-muted-foreground/20 shrink-0" />
-  if (days <= 7)  return <span className="size-2 rounded-full bg-red-500 shrink-0 animate-pulse" />
-  if (days <= 30) return <span className="size-2 rounded-full bg-amber-500 shrink-0" />
-  return <span className="size-2 rounded-full bg-emerald-500/60 shrink-0" />
+  if (days <= 7)  return <span className="size-2 rounded-full bg-destructive shrink-0 animate-pulse" />
+  if (days <= 30) return <span className="size-2 rounded-full bg-warning shrink-0" />
+  return <span className="size-2 rounded-full bg-success/60 shrink-0" />
 }
 
 function HeroCard({ deadline, onClick }: { deadline: Deadline & { days: number }; onClick: () => void }) {
@@ -207,7 +207,7 @@ function HeroCard({ deadline, onClick }: { deadline: Deadline & { days: number }
       onClick={onClick}
       className={cn(
         "flex-1 min-w-0 rounded-2xl border border-border p-4 flex flex-col gap-3 text-left hover:border-border/80 hover:shadow-sm transition-[border-color,box-shadow,transform] duration-200 ease-[var(--ease-out)] active:scale-[0.98]",
-        deadline.days <= 7 ? "border-red-500/30 bg-red-500/5" : "bg-card"
+        deadline.days <= 7 ? "border-destructive/30 bg-destructive/5" : "bg-card"
       )}>
       <span className={cn("text-[10px] font-semibold uppercase tracking-widest", cat.color)}>
         {cat.label}
@@ -256,7 +256,7 @@ function DeadlineModal({
           <div className="flex items-center gap-3 mt-3">
             <div className={cn(
               "flex flex-col items-center justify-center rounded-xl px-3.5 py-2 shrink-0",
-              deadline.days <= 7 ? "bg-red-500 text-white" : "bg-secondary text-foreground"
+              deadline.days <= 7 ? "bg-destructive text-white" : "bg-secondary text-foreground"
             )}>
               <span className="text-xl font-bold leading-none tabular-nums">
                 {deadline.days === 0 ? "!" : deadline.days}
@@ -361,11 +361,11 @@ export function DeadlineTracker({ onAsk }: { onAsk?: (question: string) => void 
       {nextCritical && (
         <div className={cn(
           "rounded-2xl border p-4 flex items-center gap-4",
-          nextCritical.days <= 7 ? "border-red-500/40 bg-red-500/10" : "border-border bg-card"
+          nextCritical.days <= 7 ? "border-destructive/40 bg-destructive/10" : "border-border bg-card"
         )}>
           <div className={cn(
             "flex flex-col items-center justify-center rounded-xl px-4 py-2 shrink-0",
-            nextCritical.days <= 7 ? "bg-red-500 text-white" : "bg-secondary text-foreground"
+            nextCritical.days <= 7 ? "bg-destructive text-white" : "bg-secondary text-foreground"
           )}>
             <span className="text-2xl font-bold leading-none tabular-nums">
               {nextCritical.days === 0 ? "!" : nextCritical.days}
@@ -466,7 +466,7 @@ export function DeadlineTracker({ onAsk }: { onAsk?: (question: string) => void 
                         className={cn(
                           "w-full flex items-center gap-3 px-4 py-3 transition-colors text-left",
                           d.days < 0 ? "opacity-40" : "hover:bg-secondary/30",
-                          d.days >= 0 && d.days <= 7 && !open && "bg-red-500/5"
+                          d.days >= 0 && d.days <= 7 && !open && "bg-destructive/5"
                         )}
                       >
                         <UrgencyDot days={d.days} />
